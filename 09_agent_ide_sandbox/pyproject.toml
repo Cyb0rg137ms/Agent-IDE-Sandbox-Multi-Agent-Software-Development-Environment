@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "agent-ide-sandbox"
+version = "1.0.0"
+description = "Multi-Agent Developer Loop Orchestration and Code Execution Sandbox"
+authors = ["Software & AI Developer"]
+readme = "README.md"
+packages = [{include = "agent_core"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
