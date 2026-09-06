@@ -54,8 +54,20 @@ class CodeExecutionSandbox:
                     text=True
                 )
                 
-                success = (result.returncode == 0)
                 logs = result.stdout + result.stderr
+                # Check for runtime errors, assertion failures, or unhandled exceptions
+                has_error = (
+                    result.returncode != 0
+                    or "Traceback (most recent call last):" in logs
+                    or "AssertionError" in logs
+                    or "FAILED (" in logs
+                    or "ERROR: " in logs
+                    or "SyntaxError:" in logs
+                    or "NameError:" in logs
+                    or "TypeError:" in logs
+                    or "ZeroDivisionError:" in logs
+                )
+                success = (result.returncode == 0) and not has_error
                 return success, logs
                 
             except subprocess.TimeoutExpired:

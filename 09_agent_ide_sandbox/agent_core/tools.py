@@ -348,6 +348,143 @@ class PythonEvalTool(BaseTool):
 
 
 # ---------------------------------------------------------------------------
+# LOGOS Cognitive & Retrieval Tools
+# ---------------------------------------------------------------------------
+
+class WebSearchTool(BaseTool):
+    """Searches external web or algorithmic corpus for theorems, invariants, and specs."""
+
+    name = "web_search"
+    description = "Search the web or local knowledge base for algorithmic invariants, documentation, and specs."
+    schema = {
+        "type": "object",
+        "properties": {
+            "query": {
+                "type": "string",
+                "description": "The search query to look up.",
+            },
+            "max_results": {
+                "type": "integer",
+                "description": "Maximum number of results to retrieve (default 3).",
+            },
+        },
+        "required": ["query"],
+    }
+
+    def execute(self, query: str, max_results: int = 3) -> ToolResult:
+        t0 = time.perf_counter()
+        try:
+            from agent_core.logos.dynamic_retrieval import DynamicAxiomRetriever
+            retriever = DynamicAxiomRetriever()
+            results = retriever.search_duckduckgo(query, max_results=max_results)
+            output_parts = [f"Found {len(results)} references:"]
+            for r in results:
+                output_parts.append(f"- [{r.title}] ({r.url}): {r.snippet}")
+            return ToolResult(
+                tool_name=self.name,
+                success=True,
+                output="\n".join(output_parts),
+                elapsed_ms=(time.perf_counter() - t0) * 1000,
+                metadata={"count": len(results)},
+            )
+        except Exception as e:
+            return ToolResult(
+                tool_name=self.name,
+                success=False,
+                output="",
+                error=str(e),
+                elapsed_ms=(time.perf_counter() - t0) * 1000,
+            )
+
+
+class AxiomVerificationTool(BaseTool):
+    """Verifies a set of propositions against formal system axioms."""
+
+    name = "axiom_verify"
+    description = "Verify logical consistency of code statements against formal axiomatic invariants (e.g. division guards, bounds)."
+    schema = {
+        "type": "object",
+        "properties": {
+            "propositions": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "List of code lines or assertions to verify against axioms.",
+            },
+        },
+        "required": ["propositions"],
+    }
+
+    def execute(self, propositions: List[str]) -> ToolResult:
+        t0 = time.perf_counter()
+        try:
+            from agent_core.logos.axiomatic_engine import AxiomaticEngine
+            engine = AxiomaticEngine()
+            consistent, violations = engine.verify_consistency(propositions)
+            out = "Axiomatic Check: PASS (All invariants hold)" if consistent else f"Axiomatic Check: VIOLATIONS DETECTED:\n" + "\n".join(violations)
+            return ToolResult(
+                tool_name=self.name,
+                success=consistent,
+                output=out,
+                error=None if consistent else "Axiomatic violations found",
+                elapsed_ms=(time.perf_counter() - t0) * 1000,
+                metadata={"violations_count": len(violations)},
+            )
+        except Exception as e:
+            return ToolResult(
+                tool_name=self.name,
+                success=False,
+                output="",
+                error=str(e),
+                elapsed_ms=(time.perf_counter() - t0) * 1000,
+            )
+
+
+class PonderingQueryTool(BaseTool):
+    """Executes horizontal multi-angle pondering and filters on 95%+ confidence."""
+
+    name = "ponder_task"
+    description = "Perform horizontal multi-dimensional pondering on a task across 5 foundational angles and filter >=95% confidence properties."
+    schema = {
+        "type": "object",
+        "properties": {
+            "task_description": {
+                "type": "string",
+                "description": "The task or subproblem to ponder horizontally.",
+            },
+        },
+        "required": ["task_description"],
+    }
+
+    def execute(self, task_description: str) -> ToolResult:
+        t0 = time.perf_counter()
+        try:
+            from agent_core.logos.pondering_engine import PonderingEngine
+            engine = PonderingEngine()
+            synthesis = engine.evaluate_multi_angle(task_description)
+            lines = [synthesis.synthesis_summary, "\nQualified Properties (Confidence >= 95%):"]
+            for p in synthesis.qualified_properties:
+                lines.append(f"  * [{p.name}] (C={p.confidence:.2%}): {p.hypothesis}")
+            return ToolResult(
+                tool_name=self.name,
+                success=True,
+                output="\n".join(lines),
+                elapsed_ms=(time.perf_counter() - t0) * 1000,
+                metadata={
+                    "qualified_count": synthesis.qualified_properties_count,
+                    "remaining_space": synthesis.remaining_search_space_fraction,
+                },
+            )
+        except Exception as e:
+            return ToolResult(
+                tool_name=self.name,
+                success=False,
+                output="",
+                error=str(e),
+                elapsed_ms=(time.perf_counter() - t0) * 1000,
+            )
+
+
+# ---------------------------------------------------------------------------
 # Tool registry
 # ---------------------------------------------------------------------------
 
@@ -385,4 +522,7 @@ class ToolRegistry:
         registry.register(FileWriteTool())
         registry.register(ShellExecuteTool())
         registry.register(PythonEvalTool())
+        registry.register(WebSearchTool())
+        registry.register(AxiomVerificationTool())
+        registry.register(PonderingQueryTool())
         return registry

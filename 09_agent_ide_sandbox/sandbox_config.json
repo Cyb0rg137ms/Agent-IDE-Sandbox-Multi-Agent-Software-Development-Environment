@@ -1,0 +1,47 @@
+{
+  "default_provider": "mock",
+  "providers": {
+    "mock": {
+      "model": "mock-developer-v1",
+      "description": "Deterministic local simulation for testing without API keys"
+    },
+    "ollama": {
+      "host": "http://localhost:11434",
+      "model": "qwen2.5-coder:7b",
+      "timeout": 120.0,
+      "description": "Local GGUF model execution via native Ollama daemon"
+    },
+    "openai": {
+      "base_url": "https://api.openai.com/v1",
+      "model": "gpt-4o",
+      "timeout": 60.0
+    },
+    "anthropic": {
+      "base_url": "https://api.anthropic.com/v1",
+      "model": "claude-3-7-sonnet-20250219",
+      "timeout": 60.0
+    },
+    "grok": {
+      "base_url": "https://api.x.ai/v1",
+      "model": "grok-2-latest",
+      "timeout": 60.0
+    },
+    "gemini": {
+      "base_url": "https://generativelanguage.googleapis.com/v1beta",
+      "model": "gemini-1.5-flash",
+      "timeout": 60.0
+    },
+    "local": {
+      "base_url": "http://localhost:8080/v1",
+      "model": "local-model",
+      "description": "OpenAI-compatible local server (llama.cpp server or LM Studio)"
+    }
+  },
+  "logos": {
+    "enable_by_default": true,
+    "confidence_threshold": 0.95,
+    "holographic_dimension": 128,
+    "max_retries": 3,
+    "sandbox_timeout_seconds": 5.0
+  }
+}

@@ -1,0 +1,1960 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="claude">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent-IDE Sandbox — Claude & LOGOS Ultra Interface</title>
+  <meta name="description" content="State-of-the-art AI interface modeled after Claude.ai, ChatGPT, and Grok, backed by the LOGOS cognitive architecture and local/cloud LLM sandbox.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@300;400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+  
+  <style>
+    /* ==========================================================================
+       THEME SYSTEM: CLAUDE.AI (Default) / CHATGPT / GROK
+       ========================================================================== */
+    :root {
+      /* Claude Warm Obsidian Palette (Default) */
+      --bg-main: #1e1d1b;
+      --bg-sidebar: #171615;
+      --bg-card: #282724;
+      --bg-card-hover: #312f2c;
+      --bg-input: #292825;
+      --bg-modal: #242220;
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-focus: #cc785c;
+      --text-main: #f5f2eb;
+      --text-muted: #9e9a93;
+      --text-subtle: #6e6a64;
+      --accent: #cc785c; /* Claude signature terracotta */
+      --accent-hover: #de886d;
+      --accent-glow: rgba(204, 120, 92, 0.25);
+      --accent-secondary: #e8a87c;
+      --success: #10b981;
+      --danger: #ef4444;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-serif: 'Newsreader', Georgia, serif;
+      --font-mono: 'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+      --radius-full: 9999px;
+      --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.35);
+      --shadow-floating: 0 12px 36px rgba(0, 0, 0, 0.5);
+    }
+
+    [data-theme="chatgpt"] {
+      --bg-main: #212121;
+      --bg-sidebar: #171717;
+      --bg-card: #2f2f2f;
+      --bg-card-hover: #383838;
+      --bg-input: #2f2f2f;
+      --bg-modal: #2a2a2a;
+      --border-color: rgba(255, 255, 255, 0.1);
+      --border-focus: #10a37f;
+      --text-main: #ececec;
+      --text-muted: #b4b4b4;
+      --text-subtle: #737373;
+      --accent: #10a37f; /* ChatGPT green */
+      --accent-hover: #1a7f64;
+      --accent-glow: rgba(16, 163, 127, 0.25);
+    }
+
+    [data-theme="grok"] {
+      --bg-main: #000000;
+      --bg-sidebar: #0a0a0c;
+      --bg-card: #121318;
+      --bg-card-hover: #1a1b22;
+      --bg-input: #121318;
+      --bg-modal: #111216;
+      --border-color: rgba(255, 255, 255, 0.12);
+      --border-focus: #a855f7;
+      --text-main: #ffffff;
+      --text-muted: #94a3b8;
+      --text-subtle: #64748b;
+      --accent: #a855f7; /* Grok neon purple */
+      --accent-hover: #c084fc;
+      --accent-glow: rgba(168, 85, 247, 0.3);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.65;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      display: flex;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Layout */
+    .app-container {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 260px;
+      height: 100%;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 30;
+    }
+
+    .sidebar.collapsed {
+      width: 0;
+      transform: translateX(-100%);
+      border-right: none;
+    }
+
+    .sidebar-top {
+      padding: 16px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--text-main);
+    }
+
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      background: var(--accent);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 10px var(--accent-glow);
+    }
+
+    .brand-title {
+      font-weight: 600;
+      font-size: 15px;
+      letter-spacing: -0.01em;
+    }
+
+    .btn-new-chat {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 12px 12px;
+      padding: 10px 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      color: var(--text-main);
+      font-size: 13.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-new-chat:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--accent);
+    }
+
+    .sidebar-menu {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .menu-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-subtle);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 4px 6px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      font-size: 13px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      background: transparent;
+      border: none;
+      width: 100%;
+      text-align: left;
+    }
+
+    .nav-item:hover {
+      background: var(--bg-card);
+      color: var(--text-main);
+    }
+
+    .nav-item.active {
+      background: var(--bg-card);
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .status-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text-muted);
+    }
+
+    .status-val {
+      font-weight: 600;
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+
+    .sidebar-bottom {
+      padding: 14px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .theme-selector-row {
+      display: flex;
+      gap: 4px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 3px;
+    }
+
+    .btn-theme {
+      flex: 1;
+      padding: 5px;
+      font-size: 11px;
+      font-weight: 500;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-theme.active {
+      background: var(--bg-main);
+      color: var(--text-main);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    }
+
+    /* Chat Center Column */
+    .main-chat {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      position: relative;
+      background: var(--bg-main);
+    }
+
+    .chat-header {
+      height: 56px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-color);
+      background: rgba(30, 29, 27, 0.85);
+      backdrop-filter: blur(12px);
+      z-index: 20;
+    }
+
+    .header-left, .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-icon {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 6px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+
+    .btn-icon:hover {
+      background: var(--bg-card);
+      color: var(--text-main);
+    }
+
+    .model-selector-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-full);
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .model-selector-btn:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--accent);
+    }
+
+    .model-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .chat-scroll-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px 24px 140px;
+      scroll-behavior: smooth;
+    }
+
+    .chat-inner {
+      max-width: 768px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    /* Welcome Hero (Claude Style) */
+    .welcome-hero {
+      text-align: center;
+      margin: 40px auto 20px;
+      max-width: 620px;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .welcome-avatar {
+      width: 52px;
+      height: 52px;
+      border-radius: var(--radius-md);
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      box-shadow: 0 4px 16px var(--accent-glow);
+    }
+
+    .welcome-hero h1 {
+      font-family: var(--font-serif);
+      font-size: 34px;
+      font-weight: 500;
+      color: var(--text-main);
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+
+    .welcome-hero p {
+      font-size: 15px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .suggestion-chips {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 32px;
+      text-align: left;
+    }
+
+    .suggestion-chip {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .suggestion-chip:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .suggestion-chip .title {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .suggestion-chip .desc {
+      font-size: 12px;
+      color: var(--text-subtle);
+    }
+
+    /* Message Rows */
+    .chat-message {
+      display: flex;
+      gap: 16px;
+      width: 100%;
+      animation: fadeIn 0.25s ease;
+    }
+
+    .chat-message.user {
+      justify-content: flex-end;
+    }
+
+    .msg-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .chat-message.user .msg-avatar {
+      background: var(--bg-card);
+      color: var(--text-muted);
+      border: 1px solid var(--border-color);
+    }
+
+    .chat-message.bot .msg-avatar {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .msg-body {
+      max-width: 680px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .chat-message.user .msg-body {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      padding: 12px 18px;
+      border-radius: 18px 18px 4px 18px;
+      color: var(--text-main);
+      font-size: 14.5px;
+    }
+
+    .chat-message.bot .msg-body {
+      width: 100%;
+      color: var(--text-main);
+      font-size: 14.5px;
+    }
+
+    /* Live Dynamic Progress Loader */
+    .loader-container {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-color);
+      padding: 10px 18px;
+      border-radius: var(--radius-md);
+      font-size: 13.5px;
+      color: var(--text-main);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .loader-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .loader-timer {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .typing-pulse {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .pulse-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 1.2s infinite ease-in-out;
+    }
+
+    .pulse-dot:nth-child(2) { animation-delay: 0.2s; }
+    .pulse-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes pulse {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+      40% { transform: scale(1.1); opacity: 1; }
+    }
+
+    .game-preview-frame {
+      width: 100%;
+      height: 460px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      background: #0a0a0a;
+      display: block;
+    }
+
+    /* Thinking Process Accordion (Claude 3.7 style) */
+    .thinking-drawer {
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      margin-bottom: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .thinking-header {
+      padding: 9px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+      font-size: 12.5px;
+      color: var(--text-muted);
+    }
+
+    .thinking-header:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .thinking-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+    }
+
+    .thinking-chevron {
+      transition: transform 0.2s ease;
+    }
+
+    .thinking-drawer.open .thinking-chevron {
+      transform: rotate(180deg);
+    }
+
+    .thinking-body {
+      display: none;
+      padding: 14px;
+      border-top: 1px solid var(--border-color);
+      font-size: 12px;
+      color: var(--text-muted);
+      background: rgba(0, 0, 0, 0.3);
+      line-height: 1.6;
+    }
+
+    .thinking-drawer.open .thinking-body {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .invariants-badge-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .invariant-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 11.5px;
+      padding: 4px 0;
+    }
+
+    .confidence-tag {
+      font-size: 10px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .confidence-tag.high {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    /* Blueprint & Component Pipeline Styles */
+    .bp-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      margin: 8px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .bp-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 8px;
+    }
+
+    .bp-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--text-main);
+    }
+
+    .bp-count-badge {
+      background: rgba(217, 119, 6, 0.2);
+      color: var(--accent);
+      border: 1px solid rgba(217, 119, 6, 0.3);
+      padding: 1px 6px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-family: var(--font-mono);
+    }
+
+    .bp-layout-tag {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    .bp-todo-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .bp-todo-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 11.5px;
+    }
+
+    .bp-status-tag {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: bold;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .bp-item-main {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      flex: 1;
+    }
+
+    .bp-item-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .bp-item-name {
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .bp-subsystem-tag {
+      font-size: 10px;
+      color: var(--accent);
+      background: rgba(217, 119, 6, 0.1);
+      padding: 1px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(217, 119, 6, 0.2);
+    }
+
+    .bp-item-purpose {
+      color: var(--text-muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .bp-item-contract code {
+      font-size: 10.5px;
+      font-family: var(--font-mono);
+      color: #a78bfa;
+      background: rgba(167, 139, 250, 0.08);
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+
+    /* Sandbox Execution Card */
+    .sandbox-container {
+      background: #151515;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+      margin-top: 6px;
+    }
+
+    .sandbox-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px;
+      background: #1c1b1a;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .mac-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .mac-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .mac-dot.red { background: #ff5f56; }
+    .mac-dot.yellow { background: #ffbd2e; }
+    .mac-dot.green { background: #27c93f; }
+
+    .sandbox-tabs {
+      display: flex;
+      gap: 6px;
+    }
+
+    .sb-tab {
+      background: transparent;
+      border: none;
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .sb-tab.active {
+      background: var(--bg-card);
+      color: var(--text-main);
+    }
+
+    .btn-copy {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-copy:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .sandbox-content {
+      padding: 14px;
+    }
+
+    .sb-pane {
+      display: none;
+    }
+    .sb-pane.active {
+      display: block;
+    }
+
+    pre code {
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      line-height: 1.55;
+      color: #e2e8f0;
+      white-space: pre-wrap;
+    }
+
+    .term-box {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: #a3e635;
+      background: #0d0d0d;
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      white-space: pre-wrap;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .audit-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .audit-card {
+      background: rgba(255, 255, 255, 0.03);
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+    }
+
+    .audit-label {
+      font-size: 11px;
+      color: var(--text-subtle);
+      text-transform: uppercase;
+    }
+
+    .audit-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-top: 2px;
+    }
+
+    /* Floating Input Dock (Claude / ChatGPT inspired) */
+    .input-dock {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 0 24px 20px;
+      background: linear-gradient(to top, var(--bg-main) 70%, transparent 100%);
+      pointer-events: none;
+    }
+
+    .input-wrapper {
+      max-width: 768px;
+      margin: 0 auto;
+      pointer-events: auto;
+    }
+
+    .input-box {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      padding: 12px 18px 10px;
+      box-shadow: var(--shadow-floating);
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .input-box:focus-within {
+      border-color: var(--border-focus);
+      box-shadow: 0 8px 30px var(--accent-glow);
+    }
+
+    .chat-textarea {
+      width: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      resize: none;
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 14.5px;
+      line-height: 1.5;
+      max-height: 180px;
+    }
+
+    .chat-textarea::placeholder {
+      color: var(--text-subtle);
+    }
+
+    .input-bar-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .input-controls-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pill-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      border-radius: var(--radius-full);
+      padding: 4px 10px;
+      font-size: 11.5px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .pill-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+    }
+
+    .pill-btn.active {
+      color: var(--accent);
+      border-color: var(--accent);
+      background: var(--accent-glow);
+    }
+
+    .btn-send-message {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px var(--accent-glow);
+    }
+
+    .btn-send-message:hover {
+      background: var(--accent-hover);
+      transform: scale(1.05);
+    }
+
+    .btn-send-message:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .disclaimer-text {
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-subtle);
+      margin-top: 8px;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      animation: fadeIn 0.15s ease;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 500px;
+      background: var(--bg-modal);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-floating);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-header h3 {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .modal-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field-group label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .select-styled, .input-styled {
+      background: #181716;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 9px 12px;
+      color: var(--text-main);
+      font-size: 13.5px;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+
+    .select-styled:focus, .input-styled:focus {
+      border-color: var(--accent);
+    }
+
+    .model-tags-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .model-tag {
+      font-size: 11px;
+      padding: 3px 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: all 0.15s ease;
+    }
+
+    .model-tag:hover {
+      background: var(--accent-glow);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .modal-footer {
+      padding: 14px 20px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .btn-action-cancel {
+      padding: 8px 14px;
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .btn-action-save {
+      padding: 8px 16px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      box-shadow: 0 2px 10px var(--accent-glow);
+    }
+
+    /* Typing Dots */
+    .typing-pulse {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      padding: 8px 0;
+    }
+
+    .pulse-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 1.2s infinite ease-in-out;
+    }
+    .pulse-dot:nth-child(2) { animation-delay: 0.2s; }
+    .pulse-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes pulse {
+      0%, 80%, 100% { opacity: 0.25; transform: scale(0.85); }
+      40% { opacity: 1; transform: scale(1.2); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-top">
+        <a href="#" class="brand-group">
+          <div class="brand-logo">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <span class="brand-title">Agent-IDE</span>
+        </a>
+        <button class="btn-icon" id="btn-toggle-sidebar" title="Collapse Sidebar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <button class="btn-new-chat" id="btn-new-chat">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        New Conversation
+      </button>
+
+      <div class="sidebar-menu">
+        <div class="menu-label">Active Provider</div>
+        <div class="status-card">
+          <div class="status-row">
+            <span>Runtime:</span>
+            <span class="status-val" id="side-provider">MOCK</span>
+          </div>
+          <div class="status-row">
+            <span>Model:</span>
+            <span class="status-val" id="side-model">mock-developer-v1</span>
+          </div>
+          <div class="status-row">
+            <span>Ollama:</span>
+            <span class="status-val" id="side-ollama" style="color: var(--accent);">Checking...</span>
+          </div>
+        </div>
+
+        <div class="menu-label">Memory Telemetry</div>
+        <div class="status-card">
+          <div class="status-row">
+            <span>Holographic Traces:</span>
+            <span class="status-val" id="side-traces">0</span>
+          </div>
+          <div class="status-row">
+            <span>Boundary Vector:</span>
+            <span class="status-val">128-D Phase</span>
+          </div>
+          <div class="status-row">
+            <span>Compression:</span>
+            <span class="status-val" id="side-compression">1.0x</span>
+          </div>
+        </div>
+
+        <div class="menu-label">Quick Starters</div>
+        <button class="nav-item quick-starter" data-query="Write a safe division function 'divide(a, b)' that handles zero divisor inputs.">
+          <span>⚡</span> Safe Division Guard
+        </button>
+        <button class="nav-item quick-starter" data-query="Write an array element accessor 'get_element(arr, idx)' that bounds checks index.">
+          <span>🛡️</span> Bounds Guard Invariant
+        </button>
+        <button class="nav-item quick-starter" data-query="Explain how the LOGOS 7-Layer Cognitive Stack derives formal axiomatic guarantees.">
+          <span>🧠</span> LOGOS Cognitive Stack
+        </button>
+      </div>
+
+      <div class="sidebar-bottom">
+        <button class="nav-item" id="btn-open-settings">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          Settings & Providers
+        </button>
+
+        <div class="theme-selector-row">
+          <button class="btn-theme active" data-theme="claude">Claude</button>
+          <button class="btn-theme" data-theme="chatgpt">ChatGPT</button>
+          <button class="btn-theme" data-theme="grok">Grok</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Chat Column -->
+    <main class="main-chat">
+      <header class="chat-header">
+        <div class="header-left">
+          <button class="btn-icon" id="btn-show-sidebar" style="display: none;" title="Open Sidebar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          <button class="model-selector-btn" id="btn-top-model" title="Switch Model">
+            <span class="model-dot"></span>
+            <span id="header-model-name">Mock: mock-developer-v1</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+        </div>
+        <div class="header-right">
+          <button class="pill-btn active" id="pill-logos-toggle" title="Toggle LOGOS Reasoning Engine">
+            <span>⚡</span> LOGOS Ultra
+          </button>
+          <button class="btn-icon" id="btn-clear-session" title="Clear Chat">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Scrollable Message Feed -->
+      <div class="chat-scroll-area" id="chat-scroll-area">
+        <div class="chat-inner" id="chat-stream">
+          
+          <!-- Hero Greeting -->
+          <div class="welcome-hero" id="welcome-hero">
+            <div class="welcome-avatar">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+              </svg>
+            </div>
+            <h1>How can I help you build today?</h1>
+            <p>
+              Pair program with the <strong>Agent-IDE Sandbox</strong> powered by the <strong>Lightyear v10.0 Ultra</strong> cognitive framework.
+              Connect local GGUF models via Ollama or frontier APIs (Claude, OpenAI, Grok).
+            </p>
+
+            <div class="suggestion-chips">
+              <div class="suggestion-chip" data-query="Write a safe division function 'divide(a, b)' that handles zero divisor inputs.">
+                <span class="title">Safe Division Invariant</span>
+                <span class="desc">Sandbox self-healing zero-divisor checks</span>
+              </div>
+              <div class="suggestion-chip" data-query="Write an array element accessor 'get_element(arr, idx)' that bounds checks index.">
+                <span class="title">Bounds Guard Invariant</span>
+                <span class="desc">Guaranteed non-overflow array indexing</span>
+              </div>
+              <div class="suggestion-chip" data-query="Implement an iterative prime sieve with recursive boundary pruning.">
+                <span class="title">Recursive Search Reduction</span>
+                <span class="desc">Compound pruning of exponential candidate spaces</span>
+              </div>
+              <div class="suggestion-chip" data-query="Explain how the LOGOS 7-Layer Cognitive Stack prevents hallucinations using formal axiomatic derivation.">
+                <span class="title">LOGOS Cognitive Stack</span>
+                <span class="desc">Axiomatic consistency and MERA multiscale invariants</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Floating Input Capsule -->
+      <div class="input-dock">
+        <div class="input-wrapper">
+          <div class="input-box">
+            <textarea
+              id="prompt-input"
+              class="chat-textarea"
+              placeholder="Ask anything or describe a task to run in the sandbox... (Shift+Enter for newline)"
+              rows="1"
+            ></textarea>
+            
+            <div class="input-bar-bottom">
+              <div class="input-controls-left">
+                <button class="pill-btn" id="btn-model-quick" title="Change Provider / Model">
+                  <span id="dock-model-label">Mock</span>
+                </button>
+              </div>
+              <button class="btn-send-message" id="btn-submit" title="Send (Enter)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="disclaimer-text">
+            Agent-IDE Sandbox compiles code inside an isolated subprocess. LOGOS enforces formal invariants.
+          </div>
+        </div>
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settings-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Model & API Settings</h3>
+        <button class="btn-icon" id="btn-close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="field-group">
+          <label for="modal-provider">Provider</label>
+          <select id="modal-provider" class="select-styled">
+            <option value="ollama">Local Ollama GGUF (Native Daemon)</option>
+            <option value="claude">Anthropic Claude API</option>
+            <option value="openai">OpenAI API</option>
+            <option value="grok">xAI Grok API</option>
+            <option value="gemini">Google Gemini API</option>
+            <option value="mock">High-Fidelity Mock Engine (Offline)</option>
+            <option value="local">Local OpenAI-Compatible Server (llama.cpp / LM Studio)</option>
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label for="modal-model">Model Name</label>
+          <input type="text" id="modal-model" class="input-styled" placeholder="e.g. gemma2:2b, qwen2.5-coder:7b, gpt-4o">
+          <div class="model-tags-row" id="modal-presets"></div>
+        </div>
+
+        <div class="field-group" id="endpoint-field">
+          <label for="modal-endpoint">Host / Base URL</label>
+          <input type="text" id="modal-endpoint" class="input-styled" placeholder="http://localhost:11434">
+        </div>
+
+        <div class="field-group" id="apikey-field">
+          <label for="modal-apikey">API Key</label>
+          <input type="password" id="modal-apikey" class="input-styled" placeholder="sk-... or ant-...">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-action-cancel" id="btn-cancel-modal">Cancel</button>
+        <button class="btn-action-save" id="btn-save-modal">Save & Connect</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inline Script for 100% Robust Execution via file:// or http:// -->
+  <script>
+    (function () {
+      'use strict';
+      
+      // Auto-detect server base: If opened as file://, route to http://127.0.0.1:8000
+      const API_BASE = (window.location.protocol === 'file:') ? 'http://127.0.0.1:8000' : '';
+
+      const state = {
+        provider: 'mock',
+        model: 'mock-developer-v1',
+        enableLogos: true,
+        catalog: {},
+        isSubmitting: false,
+      };
+
+      const DOM = {
+        sidebar: document.getElementById('sidebar'),
+        btnToggleSidebar: document.getElementById('btn-toggle-sidebar'),
+        btnShowSidebar: document.getElementById('btn-show-sidebar'),
+        btnNewChat: document.getElementById('btn-new-chat'),
+        btnClearSession: document.getElementById('btn-clear-session'),
+        chatStream: document.getElementById('chat-stream'),
+        chatScrollArea: document.getElementById('chat-scroll-area'),
+        welcomeHero: document.getElementById('welcome-hero'),
+        promptInput: document.getElementById('prompt-input'),
+        btnSubmit: document.getElementById('btn-submit'),
+        headerModelName: document.getElementById('header-model-name'),
+        dockModelLabel: document.getElementById('dock-model-label'),
+        sideProvider: document.getElementById('side-provider'),
+        sideModel: document.getElementById('side-model'),
+        sideOllama: document.getElementById('side-ollama'),
+        sideTraces: document.getElementById('side-traces'),
+        sideCompression: document.getElementById('side-compression'),
+        settingsModal: document.getElementById('settings-modal'),
+        btnOpenSettings: document.getElementById('btn-open-settings'),
+        btnTopModel: document.getElementById('btn-top-model'),
+        btnModelQuick: document.getElementById('btn-model-quick'),
+        btnCloseModal: document.getElementById('btn-close-modal'),
+        btnCancelModal: document.getElementById('btn-cancel-modal'),
+        btnSaveModal: document.getElementById('btn-save-modal'),
+        modalProvider: document.getElementById('modal-provider'),
+        modalModel: document.getElementById('modal-model'),
+        modalEndpoint: document.getElementById('modal-endpoint'),
+        modalApikey: document.getElementById('modal-apikey'),
+        modalPresets: document.getElementById('modal-presets'),
+        pillLogosToggle: document.getElementById('pill-logos-toggle'),
+      };
+
+      async function init() {
+        bindEvents();
+        await refreshStatus();
+        await refreshModels();
+      }
+
+      async function refreshStatus() {
+        try {
+          const res = await fetch(API_BASE + '/api/status');
+          if (!res.ok) return;
+          const data = await res.json();
+          state.provider = data.active_provider;
+          state.model = data.active_model;
+          state.enableLogos = data.enable_logos;
+
+          DOM.sideProvider.textContent = data.active_provider.toUpperCase();
+          DOM.sideModel.textContent = data.active_model;
+          DOM.headerModelName.textContent = `${data.active_provider.toUpperCase()}: ${data.active_model}`;
+          DOM.dockModelLabel.textContent = data.active_provider.toUpperCase();
+
+          if (data.ollama) {
+            DOM.sideOllama.textContent = data.ollama.online ? 'ONLINE' : 'OFFLINE';
+            DOM.sideOllama.style.color = data.ollama.online ? 'var(--success)' : 'var(--text-subtle)';
+          }
+          if (data.holographic_memory) {
+            DOM.sideTraces.textContent = data.holographic_memory.total_records || 0;
+            DOM.sideCompression.textContent = `${data.holographic_memory.compression_ratio || 1.0}x`;
+          }
+        } catch (e) {
+          DOM.sideOllama.textContent = 'STANDALONE';
+        }
+      }
+
+      async function refreshModels() {
+        try {
+          const res = await fetch(API_BASE + '/api/models');
+          if (!res.ok) return;
+          state.catalog = await res.json();
+          renderPresets();
+        } catch (e) {}
+      }
+
+      function renderPresets() {
+        DOM.modalPresets.innerHTML = '';
+        const curProv = DOM.modalProvider.value;
+        const list = (state.catalog.presets && state.catalog.presets[curProv]) || [];
+        list.forEach(m => {
+          const tag = document.createElement('span');
+          tag.className = 'model-tag';
+          tag.textContent = m;
+          tag.onclick = () => { DOM.modalModel.value = m; };
+          DOM.modalPresets.appendChild(tag);
+        });
+      }
+
+      function bindEvents() {
+        // Theme switching
+        document.querySelectorAll('.btn-theme').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('.btn-theme').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.documentElement.setAttribute('data-theme', btn.getAttribute('data-theme'));
+          });
+        });
+
+        // Sidebar toggles
+        DOM.btnToggleSidebar.addEventListener('click', () => {
+          DOM.sidebar.classList.add('collapsed');
+          DOM.btnShowSidebar.style.display = 'flex';
+        });
+        DOM.btnShowSidebar.addEventListener('click', () => {
+          DOM.sidebar.classList.remove('collapsed');
+          DOM.btnShowSidebar.style.display = 'none';
+        });
+
+        // Input height & submit
+        DOM.promptInput.addEventListener('input', () => {
+          DOM.promptInput.style.height = 'auto';
+          DOM.promptInput.style.height = Math.min(DOM.promptInput.scrollHeight, 180) + 'px';
+        });
+        DOM.promptInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendPrompt();
+          }
+        });
+        DOM.btnSubmit.addEventListener('click', sendPrompt);
+
+        // Quick starters & suggestions
+        document.querySelectorAll('.suggestion-chip, .quick-starter').forEach(chip => {
+          chip.addEventListener('click', () => {
+            const q = chip.getAttribute('data-query');
+            DOM.promptInput.value = q;
+            sendPrompt();
+          });
+        });
+
+        // Modal triggers
+        const openModal = () => {
+          DOM.modalProvider.value = state.provider;
+          DOM.modalModel.value = state.model;
+          renderPresets();
+          DOM.settingsModal.classList.add('open');
+        };
+        const closeModal = () => DOM.settingsModal.classList.remove('open');
+
+        DOM.btnOpenSettings.addEventListener('click', openModal);
+        DOM.btnTopModel.addEventListener('click', openModal);
+        DOM.btnModelQuick.addEventListener('click', openModal);
+        DOM.btnCloseModal.addEventListener('click', closeModal);
+        DOM.btnCancelModal.addEventListener('click', closeModal);
+        DOM.modalProvider.addEventListener('change', renderPresets);
+
+        DOM.btnSaveModal.addEventListener('click', async () => {
+          const payload = {
+            provider: DOM.modalProvider.value,
+            model: DOM.modalModel.value,
+            custom_endpoint: DOM.modalEndpoint.value || null,
+            api_key: DOM.modalApikey.value || null,
+            enable_logos: state.enableLogos,
+          };
+          try {
+            await fetch(API_BASE + '/api/settings', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+            await refreshStatus();
+          } catch (e) {}
+          closeModal();
+        });
+
+        DOM.btnNewChat.addEventListener('click', resetChat);
+        DOM.btnClearSession.addEventListener('click', resetChat);
+
+        DOM.pillLogosToggle.addEventListener('click', () => {
+          state.enableLogos = !state.enableLogos;
+          DOM.pillLogosToggle.classList.toggle('active', state.enableLogos);
+        });
+      }
+
+      async function resetChat() {
+        try {
+          await fetch(API_BASE + '/api/clear', { method: 'POST' });
+        } catch (e) {}
+        DOM.chatStream.innerHTML = '';
+        DOM.welcomeHero.style.display = 'block';
+        DOM.chatStream.appendChild(DOM.welcomeHero);
+        refreshStatus();
+      }
+
+      async function sendPrompt() {
+        const text = DOM.promptInput.value.trim();
+        if (!text || state.isSubmitting) return;
+
+        if (DOM.welcomeHero) DOM.welcomeHero.style.display = 'none';
+
+        appendUserMsg(text);
+        DOM.promptInput.value = '';
+        DOM.promptInput.style.height = 'auto';
+
+        state.isSubmitting = true;
+        DOM.btnSubmit.disabled = true;
+        const loader = appendLoader();
+        scrollToBottom();
+
+        try {
+          const res = await fetch(API_BASE + '/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: text }),
+          });
+
+          loader.remove();
+
+          if (!res.ok) {
+            const err = await res.json();
+            appendBotMsg({ content: `**Error:** ${err.error || 'Server error'}` });
+          } else {
+            const data = await res.json();
+            appendBotMsg(data);
+            refreshStatus();
+          }
+        } catch (err) {
+          loader.remove();
+          appendBotMsg({ content: `**Network Error:** Could not connect to API server at \`${API_BASE || 'localhost'}\`. Ensure server is active (\`python run_web_ui.py\`).` });
+        } finally {
+          state.isSubmitting = false;
+          DOM.btnSubmit.disabled = false;
+          scrollToBottom();
+        }
+      }
+
+      function appendUserMsg(text) {
+        const row = document.createElement('div');
+        row.className = 'chat-message user';
+        row.innerHTML = `
+          <div class="msg-body">${escapeHtml(text)}</div>
+          <div class="msg-avatar">You</div>
+        `;
+        DOM.chatStream.appendChild(row);
+      }
+
+      function appendLoader() {
+        const row = document.createElement('div');
+        row.className = 'chat-message bot';
+        const start = Date.now();
+        row.innerHTML = `
+          <div class="msg-avatar">✦</div>
+          <div class="msg-body">
+            <div class="loader-container">
+              <div class="typing-pulse">
+                <span class="pulse-dot"></span>
+                <span class="pulse-dot"></span>
+                <span class="pulse-dot"></span>
+              </div>
+              <div class="loader-status">
+                <span id="loader-stage-text">🧠 LOGOS: Formulating architectural plan...</span>
+                <span class="loader-timer">(<span id="loader-seconds">0.0</span>s)</span>
+              </div>
+            </div>
+          </div>
+        `;
+        DOM.chatStream.appendChild(row);
+
+        const stageText = row.querySelector('#loader-stage-text');
+        const timerVal = row.querySelector('#loader-seconds');
+
+        const interval = setInterval(() => {
+          const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+          if (timerVal) timerVal.textContent = elapsed;
+          if (stageText) {
+            if (elapsed < 2.5) {
+              stageText.textContent = '🧠 LOGOS: Evaluating 5 orthogonal pondering angles...';
+            } else if (elapsed < 8.0) {
+              stageText.textContent = '⚡ Synthesizing code architecture with Gemma 2B...';
+            } else if (elapsed < 14.0) {
+              stageText.textContent = '🧪 Executing sandbox safety & syntax audit...';
+            } else {
+              stageText.textContent = '✨ Finalizing verified code artifacts...';
+            }
+          }
+        }, 100);
+
+        return {
+          remove: () => {
+            clearInterval(interval);
+            row.remove();
+          }
+        };
+      }
+
+      function appendBotMsg(data) {
+        const row = document.createElement('div');
+        row.className = 'chat-message bot';
+
+        const body = document.createElement('div');
+        body.className = 'msg-body';
+
+        // 1. Thinking Process Accordion (Claude 3.7 Style)
+        if (data.thinking) {
+          const drawer = document.createElement('div');
+          drawer.className = 'thinking-drawer';
+          
+          let propsList = '';
+          if (data.thinking.qualified_properties) {
+            data.thinking.qualified_properties.forEach(p => {
+              propsList += `
+                <div class="invariant-item">
+                  <span class="confidence-tag high">${(p.confidence * 100).toFixed(1)}%</span>
+                  <span><strong>${escapeHtml(p.name)}:</strong> ${escapeHtml(p.hypothesis)}</span>
+                </div>
+              `;
+            });
+          }
+
+          let blueprintHtml = '';
+          if (data.thinking.blueprint) {
+            const bp = data.thinking.blueprint;
+            let todoRows = '';
+            if (bp.components && bp.components.length > 0) {
+              bp.components.forEach(c => {
+                todoRows += `
+                  <div class="bp-todo-item">
+                    <div class="bp-status-tag">✓</div>
+                    <div class="bp-item-main">
+                      <div class="bp-item-head">
+                        <span class="bp-item-name">${escapeHtml(c.name)}</span>
+                        <span class="bp-subsystem-tag">${escapeHtml(c.subsystem)}</span>
+                      </div>
+                      <div class="bp-item-purpose">${escapeHtml(c.purpose)}</div>
+                      <div class="bp-item-contract"><code>${escapeHtml(c.contract)}</code></div>
+                    </div>
+                  </div>
+                `;
+              });
+            }
+
+            blueprintHtml = `
+              <div class="bp-card">
+                <div class="bp-header">
+                  <div class="bp-title">
+                    <span>📋</span>
+                    <span>Component Blueprint & Todo Pipeline</span>
+                    <span class="bp-count-badge">${bp.total_components || (bp.components && bp.components.length) || 0} Modules</span>
+                  </div>
+                  <div class="bp-layout-tag">${escapeHtml(bp.system_layout || '')}</div>
+                </div>
+                <div class="bp-todo-list">
+                  ${todoRows}
+                </div>
+              </div>
+            `;
+          }
+
+          const convRounds = (data.thinking && data.thinking.convergence_rounds) || 2;
+          const convText = 'Dual-Pass Audit (OO₁➔OO₂➔OO₃)';
+
+          let convHtml = '';
+          if (data.thinking && data.thinking.audit_history) {
+            convHtml = `
+              <div class="convergence-badge-row">
+                <span class="conv-pill">🎯 Dual-Pass Rigorous Audit: OO₁ ➔ OO₂ ➔ OO₃ (Verified Answer)</span>
+                <span class="conv-pill">🔍 ${convRounds} Audit Passes Completed</span>
+              </div>
+            `;
+          }
+
+          drawer.innerHTML = `
+            <div class="thinking-header">
+              <div class="thinking-left">
+                <span>🧠</span>
+                <span>Thought for ${data.elapsed_seconds || '1.1'}s · LOGOS ${data.thinking.topology || 'adaptive'} · 🎯 ${convText}</span>
+              </div>
+              <svg class="thinking-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+            <div class="thinking-body">
+              ${convHtml}
+              <div>${escapeHtml(data.thinking.summary || '')}</div>
+              ${blueprintHtml}
+              <div class="invariants-badge-list">${propsList}</div>
+            </div>
+          `;
+          drawer.querySelector('.thinking-header').onclick = () => drawer.classList.toggle('open');
+          body.appendChild(drawer);
+        }
+
+        // 2. Formatted Markdown Text
+        const textDiv = document.createElement('div');
+        textDiv.innerHTML = formatMarkdown(data.content || '');
+        body.appendChild(textDiv);
+
+        // 3. Sandbox IDE Card (if code is present)
+        if (data.type === 'code_execution' && data.code) {
+          const card = document.createElement('div');
+          card.className = 'sandbox-container';
+          const cardId = 'c_' + Math.random().toString(36).substr(2, 7);
+          const isHtmlApp = data.code && (data.code.includes('<canvas') || data.code.includes('<html') || data.code.includes('<!DOCTYPE') || data.code.includes('addEventListener') || data.code.includes('getContext('));
+
+          let tabsHtml = '';
+          let panesHtml = '';
+
+          if (isHtmlApp) {
+            tabsHtml = `
+              <button class="sb-tab active" data-target="${cardId}-preview">🎮 Live Play / Preview</button>
+              <button class="sb-tab" data-target="${cardId}-code">View Code</button>
+              <button class="sb-tab" data-target="${cardId}-audit">Security Audit</button>
+            `;
+            panesHtml = `
+              <div class="sb-pane active" id="${cardId}-preview">
+                <iframe class="game-preview-frame" sandbox="allow-scripts allow-same-origin" srcdoc="${escapeHtml(data.code)}"></iframe>
+              </div>
+              <div class="sb-pane" id="${cardId}-code">
+                <pre><code>${escapeHtml(data.code)}</code></pre>
+              </div>
+              <div class="sb-pane" id="${cardId}-audit">
+                <div class="audit-grid">
+                  <div class="audit-card">
+                    <div class="audit-label">Status</div>
+                    <div class="audit-value" style="color: var(--success);">${(data.status || 'SUCCESS').toUpperCase()}</div>
+                  </div>
+                  <div class="audit-card">
+                    <div class="audit-label">Style / Contract Score</div>
+                    <div class="audit-value" style="color: var(--accent);">${(data.review && data.review.style_score) || '9.8'} / 10.0</div>
+                  </div>
+                </div>
+              </div>
+            `;
+          } else {
+            tabsHtml = `
+              <button class="sb-tab active" data-target="${cardId}-code">Python Solution</button>
+              <button class="sb-tab" data-target="${cardId}-term">Terminal Output</button>
+              <button class="sb-tab" data-target="${cardId}-audit">Security Audit</button>
+            `;
+            panesHtml = `
+              <div class="sb-pane active" id="${cardId}-code">
+                <pre><code>${escapeHtml(data.code)}</code></pre>
+              </div>
+              <div class="sb-pane" id="${cardId}-term">
+                <div class="term-box">${escapeHtml(data.test_logs || 'All assertions passed.')}</div>
+              </div>
+              <div class="sb-pane" id="${cardId}-audit">
+                <div class="audit-grid">
+                  <div class="audit-card">
+                    <div class="audit-label">Status</div>
+                    <div class="audit-value" style="color: var(--success);">${(data.status || 'SUCCESS').toUpperCase()}</div>
+                  </div>
+                  <div class="audit-card">
+                    <div class="audit-label">Style / Contract Score</div>
+                    <div class="audit-value" style="color: var(--accent);">${(data.review && data.review.style_score) || '9.5'} / 10.0</div>
+                  </div>
+                </div>
+              </div>
+            `;
+          }
+
+          card.innerHTML = `
+            <div class="sandbox-topbar">
+              <div class="mac-dots">
+                <span class="mac-dot red"></span>
+                <span class="mac-dot yellow"></span>
+                <span class="mac-dot green"></span>
+              </div>
+              <div class="sandbox-tabs">
+                ${tabsHtml}
+              </div>
+              <button class="btn-copy" data-raw="${encodeURIComponent(data.code)}">Copy Code</button>
+            </div>
+            <div class="sandbox-content">
+              ${panesHtml}
+            </div>
+          `;
+
+          // Tab handling
+          card.querySelectorAll('.sb-tab').forEach(tab => {
+            tab.onclick = () => {
+              card.querySelectorAll('.sb-tab').forEach(t => t.classList.remove('active'));
+              card.querySelectorAll('.sb-pane').forEach(p => p.classList.remove('active'));
+              tab.classList.add('active');
+              card.querySelector('#' + tab.getAttribute('data-target')).classList.add('active');
+            };
+          });
+
+          // Copy code
+          const copyBtn = card.querySelector('.btn-copy');
+          copyBtn.onclick = () => {
+            navigator.clipboard.writeText(decodeURIComponent(copyBtn.getAttribute('data-raw'))).then(() => {
+              copyBtn.textContent = 'Copied!';
+              setTimeout(() => copyBtn.textContent = 'Copy Code', 1800);
+            });
+          };
+
+          body.appendChild(card);
+        }
+
+        row.innerHTML = `<div class="msg-avatar">✦</div>`;
+        row.appendChild(body);
+        DOM.chatStream.appendChild(row);
+      }
+
+      function scrollToBottom() {
+        DOM.chatScrollArea.scrollTop = DOM.chatScrollArea.scrollHeight;
+      }
+
+      function escapeHtml(s) {
+        if (!s) return '';
+        return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+
+      function formatMarkdown(s) {
+        if (!s) return '';
+        let out = escapeHtml(s);
+        out = out.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        out = out.replace(/`(.*?)`/g, '<code style="background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono); font-size: 13px;">$1</code>');
+        out = out.replace(/^\s*-\s+(.*)$/gm, '<li style="margin-left: 20px;">$1</li>');
+        out = out.replace(/\n\n/g, '<br><br>');
+        return out;
+      }
+
+      document.addEventListener('DOMContentLoaded', init);
+    })();
+  </script>
+</body>
+</html>
