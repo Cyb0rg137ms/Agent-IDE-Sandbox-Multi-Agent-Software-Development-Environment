@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="claude">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent-IDE Sandbox — Claude & TypeSafe AI Jev Interface</title>
+  <meta name="description" content="State-of-the-art AI interface modeled after Claude.ai, with custom MCP Server Studio, TypeSafe AI Jev fast decision pipeline, and LOGOS sandbox.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- Left Sidebar (Claude UI Aesthetic) -->
+    <aside class="sidebar" id="sidebar">
+      
+      <!-- Top Title & Toggle Bar -->
+      <div class="sidebar-header">
+        <div class="sidebar-header-left">
+          <button class="btn-sidebar-toggle" id="btn-toggle-sidebar" title="Collapse Sidebar">
+            <!-- Claude split-panel icon -->
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+              <line x1="9" y1="3" x2="9" y2="21"></line>
+            </svg>
+          </button>
+          <span class="brand-claude-title">Agent-IDE</span>
+        </div>
+      </div>
+
+      <!-- New Chat Action Button -->
+      <div class="sidebar-new-chat-wrapper">
+        <button class="btn-claude-new" id="btn-new-chat">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>New</span>
+        </button>
+      </div>
+
+      <!-- Main Navigation Menu -->
+      <div class="sidebar-nav-list">        <button class="nav-row-item" id="btn-nav-artifacts">
+          <div class="nav-row-left">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <circle cx="19" cy="6" r="2"></circle>
+              <circle cx="5" cy="6" r="2"></circle>
+              <circle cx="19" cy="18" r="2"></circle>
+              <circle cx="5" cy="18" r="2"></circle>
+              <line x1="12" y1="9" x2="12" y2="3"></line>
+              <line x1="14" y1="14" x2="17.5" y2="17"></line>
+              <line x1="10" y1="14" x2="6.5" y2="17"></line>
+            </svg>
+            <span>Artifacts</span>
+          </div>
+        </button>
+
+        <button class="nav-row-item" id="btn-nav-code">
+          <div class="nav-row-left">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 18 22 12 16 6"></polyline>
+              <polyline points="8 6 2 12 8 18"></polyline>
+            </svg>
+            <span>Code</span>
+          </div>
+          <span class="badge-upgrade">Upgrade</span>
+        </button>
+
+        <button class="nav-row-item highlight-mcp" id="btn-nav-mcp-studio">
+          <div class="nav-row-left">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+            </svg>
+            <span>MCP Studio</span>
+          </div>
+          <span class="badge-mcp-dev">Develop</span>
+        </button>
+
+        <button class="nav-row-item highlight-local-ai" id="btn-nav-local-ai">
+          <div class="nav-row-left">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+            <span>Local AI Studio</span>
+          </div>
+          <span class="badge-local-ai" id="sidebar-local-status-badge">Ollama</span>
+        </button>
+      </div>
+
+      <!-- Scrollable Chats Area -->
+      <div class="sidebar-scrollable">
+        
+        <!-- Chats and Tasks Section -->
+        <div class="sidebar-section-header">
+          <span class="section-title">Recent Chats</span>
+        </div>
+        <ul class="sidebar-item-list" id="chats-history-list"><li class="sidebar-item-row" style="opacity:0.5;"><span class="item-title">No chats yet</span></li></ul>
+
+      </div>
+
+      <!-- User Profile Dock (Exact match to screenshot: <span id="dynamic-user-name">User</span> · Free) -->
+      <div class="sidebar-profile-bar" id="profile-bar">
+        <div class="profile-left">
+          <div class="profile-avatar">A</div>
+          <div class="profile-meta">
+            <span class="profile-name"><span id="dynamic-user-name">User</span></span>
+            <span class="profile-plan">· Free</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="profile-chevron">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+        </div>
+        <div class="profile-actions">
+          <button class="profile-btn-icon" id="btn-export-chat" title="Export History">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+          </button>
+          <button class="profile-btn-icon" id="btn-search-chats" title="Search Chats">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- Main Chat Column -->
+    <main class="main-chat">
+      
+      <!-- Top Chat Header -->
+      <header class="chat-header">
+        <div class="header-left">
+          <button class="btn-sidebar-toggle" id="btn-show-sidebar" style="display: none;" title="Open Sidebar">
+            <!-- Claude split-panel icon -->
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+              <line x1="9" y1="3" x2="9" y2="21"></line>
+            </svg>
+          </button>
+          
+          <button class="model-selector-pill" id="btn-top-model" title="Switch Model & Provider">
+            <span class="model-dot"></span>
+            <span id="header-model-name">Mock: mock-developer-v1</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+
+          <!-- TypeSafe AI Jev Fast Decision Pipeline Badge -->
+          <div class="jev-speed-pill" id="jev-speed-badge" title="TypeSafe AI Jev Single-Pass Parallel Classification (<15ms)">
+            <span class="jev-bolt">⚡</span>
+            <span class="jev-text">Jev Fast-Path: <span id="jev-latency-val">9.2ms</span></span>
+          </div>
+        </div>
+
+        <div class="header-right">
+          <div class="theme-selector-mini">
+            <button class="btn-theme-dot active" data-theme="claude" title="Claude Theme"></button>
+            <button class="btn-theme-dot" data-theme="chatgpt" title="ChatGPT Theme"></button>
+            <button class="btn-theme-dot" data-theme="grok" title="Grok Theme"></button>
+          </div>
+
+          <button class="pill-toggle active" id="pill-logos-toggle" title="Toggle LOGOS Reasoning Engine">
+            <span>🧠</span> LOGOS Ultra
+          </button>
+
+          <button class="btn-icon" id="btn-open-settings" title="Settings & Providers">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+
+          <button class="btn-icon" id="btn-clear-session" title="Reset Session">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Chat Scroll Area -->
+      <div class="chat-scroll-area" id="chat-scroll-area">
+        <div class="chat-inner" id="chat-stream">
+          
+          <!-- Hero Greeting (Shown on Empty Chat) -->
+          <div class="welcome-hero" id="welcome-hero">
+            <div class="welcome-avatar">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+              </svg>
+            </div>
+            <h1>How can I help you build today?</h1>
+            <p>
+              Pair program with the <strong>Agent-IDE Sandbox</strong> powered by <strong>TypeSafe AI Jev</strong> fast-pipeline decisions and <strong>LOGOS Ultra</strong> cognitive invariants.
+              Develop custom MCP servers, execute isolated Python sandbox code, or converse with frontier LLMs.
+            </p>
+
+            <!-- Local AI Studio Callout Banner -->
+            <div class="local-ai-callout" id="local-ai-callout">
+              <div class="callout-badge">LOCAL LLM RUNTIME · OLLAMA</div>
+              <div class="callout-body">
+                <div class="callout-icon-box">🦙</div>
+                <div class="callout-text-wrap">
+                  <div class="callout-title">Run 100% Local &amp; Private LLMs (No API Key Required)</div>
+                  <div class="callout-desc">Auto-detects Ollama, downloads base models (Gemma 2, Qwen 2.5 Coder, DeepSeek R1), and routes entire pipeline prompts through the local model.</div>
+                </div>
+                <div class="callout-actions">
+                  <button class="btn-callout-launch" id="btn-hero-open-gallery">
+                    <span>⚡ Browse &amp; Launch Local Models</span>
+                  </button>
+                  <span class="callout-status-indicator" id="hero-ollama-status-chip">
+                    <span class="status-dot">●</span> <span id="hero-status-text">Checking Ollama...</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="suggestion-chips">
+              <div class="suggestion-chip" data-query="Write a safe division function 'divide(a, b)' that handles zero divisor inputs.">
+                <span class="title">Safe Division Invariant</span>
+                <span class="desc">Sandbox self-healing zero-divisor checks</span>
+              </div>
+              <div class="suggestion-chip" data-query="Write an array element accessor 'get_element(arr, idx)' that bounds checks index.">
+                <span class="title">Bounds Guard Invariant</span>
+                <span class="desc">Guaranteed non-overflow array indexing</span>
+              </div>
+              <div class="suggestion-chip" data-query="Develop a custom Model Context Protocol (MCP) server for SQLite query execution.">
+                <span class="title">MCP Server Studio</span>
+                <span class="desc">Scaffold JSON-RPC tools for Claude & Cursor</span>
+              </div>
+              <div class="suggestion-chip" data-query="Explain how TypeSafe AI Jev achieves sub-15ms decisions using parallel Choice, Score, and Noul primitives.">
+                <span class="title">TypeSafe Jev Pipeline</span>
+                <span class="desc">Fast-path parallel categorical decisions</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Floating Input Capsule -->
+      <div class="input-dock">
+        <div class="input-wrapper">
+          <div class="input-box">
+            <textarea
+              id="prompt-input"
+              class="chat-textarea"
+              placeholder="Ask anything or describe a task to run in the sandbox... (Shift+Enter for newline)"
+              rows="1"
+            ></textarea>
+            
+            <div class="input-bar-bottom">
+              <div class="input-controls-left">
+                <button class="pill-btn" id="btn-model-quick" title="Change Provider / Model">
+                  <span id="dock-model-label">MOCK</span>
+                </button>
+                <button class="pill-btn mcp-quick-btn" id="btn-quick-mcp" title="Open MCP Developer Studio">
+                  <span>🛠️</span> MCP Studio
+                </button>
+              </div>
+              <button class="btn-send-message" id="btn-submit" title="Send (Enter)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="disclaimer-text">
+            Agent-IDE Sandbox compiles code inside an isolated subprocess. TypeSafe AI Jev evaluates decisions in &lt;15ms.
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- =========================================================================
+       MODAL 1: MCP SERVER DEVELOPER STUDIO
+       ========================================================================= -->
+  <div class="modal-overlay" id="mcp-studio-modal">
+    <div class="modal-card modal-large">
+      <div class="modal-header">
+        <div class="modal-header-text">
+          <div class="badge-mcp-top">Model Context Protocol</div>
+          <h3>MCP Server Developer Studio</h3>
+          <p class="modal-subtitle">Design, test, and scaffold custom MCP servers for Claude Desktop, Cursor, and Antigravity.</p>
+        </div>
+        <button class="btn-icon" id="btn-close-mcp-modal">&times;</button>
+      </div>
+
+      <div class="modal-body mcp-studio-body">
+        <div class="mcp-studio-grid">
+          
+          <!-- Left Column: Server Config & Tool Designer -->
+          <div class="mcp-col-form">
+            <div class="field-group">
+              <label>Starter Template</label>
+              <select id="mcp-template-select" class="select-styled">
+                <option value="sqlite-query-engine">SQLite Query Engine (Relational DB)</option>
+                <option value="weather-satellite-mcp">Weather Satellite Service</option>
+                <option value="crypto-hash-engine">Crypto Hash & Signature Verifier</option>
+                <option value="custom">Custom Blank Server</option>
+              </select>
+            </div>
+
+            <div class="field-row">
+              <div class="field-group flex-1">
+                <label>Server Name</label>
+                <input type="text" id="mcp-server-name" class="input-styled" value="sqlite-query-engine">
+              </div>
+              <div class="field-group flex-1">
+                <label>Transport Protocol</label>
+                <select id="mcp-transport" class="select-styled">
+                  <option value="stdio">stdio (Local Subprocess / CLI)</option>
+                  <option value="sse">SSE (HTTP Server-Sent Events)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label>Description</label>
+              <input type="text" id="mcp-server-desc" class="input-styled" value="Local SQLite relational database explorer with schema inspection.">
+            </div>
+
+            <div class="mcp-tools-section">
+              <div class="tools-header">
+                <h4>Registered Tools</h4>
+                <button class="btn-secondary-sm" id="btn-add-mcp-tool">+ Add Tool</button>
+              </div>
+              
+              <div class="tool-editor-card">
+                <div class="field-row">
+                  <div class="field-group flex-1">
+                    <label>Tool Name</label>
+                    <input type="text" id="mcp-tool-name" class="input-styled" value="run_sql">
+                  </div>
+                  <div class="field-group flex-2">
+                    <label>Tool Description</label>
+                    <input type="text" id="mcp-tool-desc" class="input-styled" value="Executes a SELECT query against an in-memory database.">
+                  </div>
+                </div>
+
+                <div class="field-group">
+                  <label>Parameters (JSON Array or Schema)</label>
+                  <input type="text" id="mcp-tool-params" class="input-styled" value='[{"name": "query", "param_type": "string", "description": "SQL query to run"}]'>
+                </div>
+
+                <div class="field-group">
+                  <label>Python Handler Implementation Code</label>
+                  <textarea id="mcp-tool-code" class="code-editor-area" rows="5">import sqlite3
+conn = sqlite3.connect(':memory:')
+cur = conn.cursor()
+cur.execute('CREATE TABLE users (id INT, name TEXT)')
+cur.execute("INSERT INTO users VALUES (1, 'Alice'), (2, 'Bob')")
+cur.execute(kwargs.get('query', 'SELECT * FROM users'))
+rows = cur.fetchall()
+return json.dumps({'rows': rows})</textarea>
+                </div>
+
+                <div class="field-group">
+                  <label>Test Arguments (JSON Payload)</label>
+                  <input type="text" id="mcp-test-args" class="input-styled" value='{"query": "SELECT * FROM users"}'>
+                </div>
+
+                <div class="tool-actions-row">
+                  <button class="btn-action-test" id="btn-test-mcp-tool">
+                    <span>▶</span> Test Tool in Sandbox
+                  </button>
+                  <button class="btn-secondary-sm" id="btn-generate-mcp-server">
+                    <span>⚡</span> Scaffold Server Code
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Right Column: Live Output & Code Preview -->
+          <div class="mcp-col-preview">
+            <div class="mcp-tabs-bar">
+              <button class="mcp-tab active" data-tab="jsonrpc">JSON-RPC 2.0 Output</button>
+              <button class="mcp-tab" data-tab="python">server.py (FastMCP)</button>
+              <button class="mcp-tab" data-tab="config">claude_desktop_config.json</button>
+            </div>
+
+            <div class="mcp-tab-pane active" id="pane-jsonrpc">
+              <pre class="console-box" id="mcp-jsonrpc-output">// Run "Test Tool in Sandbox" to view live JSON-RPC 2.0 request & response...</pre>
+            </div>
+
+            <div class="mcp-tab-pane" id="pane-python">
+              <pre class="code-box" id="mcp-python-code">// Click "Scaffold Server Code" to generate complete FastMCP code...</pre>
+              <div class="mcp-export-actions">
+                <button class="btn-copy-code" id="btn-copy-mcp-py">Copy server.py</button>
+              </div>
+            </div>
+
+            <div class="mcp-tab-pane" id="pane-config">
+              <pre class="code-box" id="mcp-config-code">// Claude Desktop config snippet...</pre>
+              <div class="mcp-export-actions">
+                <button class="btn-copy-code" id="btn-copy-mcp-cfg">Copy JSON Config</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button class="btn-action-cancel" id="btn-close-mcp-footer">Close Studio</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL 2: PROJECTS MANAGER
+       ========================================================================= -->
+  <div class="modal-overlay" id="projects-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Workspace Projects</h3>
+        <button class="btn-icon" id="btn-close-projects-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="field-group">
+          <label>Create New Project</label>
+          <input type="text" id="new-project-title" class="input-styled" placeholder="Project Name (e.g. Quantum Tensor RBM)">
+        </div>
+        <div class="field-group">
+          <label>Description & Scope</label>
+          <input type="text" id="new-project-desc" class="input-styled" placeholder="Brief project summary...">
+        </div>
+        <button class="btn-primary-action" id="btn-save-new-project">+ Create & Pin Project</button>
+        
+        <div class="projects-list-wrap mt-16">
+          <h4>Active Projects</h4>
+          <ul class="projects-dialog-list" id="projects-dialog-list"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL 3: ARTIFACTS DRAWER / GALLERY
+       ========================================================================= -->
+  <div class="modal-overlay" id="artifacts-modal">
+    <div class="modal-card modal-large">
+      <div class="modal-header">
+        <h3>Generated Artifacts & Previews</h3>
+        <button class="btn-icon" id="btn-close-artifacts-modal">&times;</button>
+      </div>
+      <div class="modal-body artifacts-modal-grid">
+        <div class="artifacts-sidebar" id="artifacts-list-sidebar">
+          <!-- Populated dynamically -->
+        </div>
+        <div class="artifacts-viewer" id="artifact-viewer-pane">
+          <div class="artifact-empty-hint">Select an artifact from the list to preview or interact with it.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL 4: SETTINGS & MODEL CONFIGURATION
+       ========================================================================= -->
+  <div class="modal-overlay" id="settings-modal">
+    <div class="modal-card modal-card--wide">
+      <div class="modal-header">
+        <h3>Model &amp; API Settings</h3>
+        <button class="btn-icon" id="btn-close-settings-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Active Connection Status Banner -->
+        <div id="conn-status-banner" class="conn-banner conn-banner--mock">
+          <span class="conn-dot" id="conn-dot">●</span>
+          <span id="conn-banner-text">Mock Engine — Offline mode (no API key needed)</span>
+        </div>
+
+        <!-- Quick link to Local AI Studio -->
+        <div class="settings-local-ai-row">
+          <button type="button" class="btn-settings-open-gallery" id="btn-settings-open-gallery">
+            <span>🦙 Open Local AI Studio &amp; Model Gallery</span>
+            <span class="badge-gallery-quick">Auto-Launcher</span>
+          </button>
+        </div>
+
+        <div class="field-group">
+          <label for="modal-provider">Provider</label>
+          <select id="modal-provider" class="select-styled">
+            <option value="mock">🤖 High-Fidelity Mock Engine (Zero-Cost / Offline)</option>
+            <option value="ollama">🦙 Local Ollama GGUF (Native Daemon)</option>
+            <option value="anthropic">🟠 Anthropic Claude API</option>
+            <option value="claude">🟠 Anthropic Claude API (alias)</option>
+            <option value="openai">🟢 OpenAI API</option>
+            <option value="grok">⚡ xAI Grok API</option>
+            <option value="gemini">🔵 Google Gemini API</option>
+            <option value="local">🖥️ Local OpenAI-Compatible (llama.cpp / LM Studio)</option>
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label for="modal-model">Model Name</label>
+          <input type="text" id="modal-model" class="input-styled" placeholder="e.g. claude-3-7-sonnet-20250219, gpt-4o, qwen2.5-coder:7b">
+          <div class="model-tags-row" id="modal-presets"></div>
+        </div>
+
+        <div class="field-group" id="endpoint-field">
+          <label for="modal-endpoint">Host / Base URL <span style="color:#64748b;font-weight:normal">(Ollama or local server)</span></label>
+          <input type="text" id="modal-endpoint" class="input-styled" placeholder="http://localhost:11434">
+        </div>
+
+        <div class="field-group" id="apikey-field">
+          <label for="modal-apikey">API Key <span style="color:#64748b;font-weight:normal">(Stored in session — never persisted)</span></label>
+          <input type="password" id="modal-apikey" class="input-styled" placeholder="sk-ant-... or sk-... or AIza...">
+        </div>
+
+        <!-- Connection Test Result -->
+        <div id="conn-test-result" style="display:none; margin-top:10px; padding:10px 12px; border-radius:6px; font-size:13px; line-height:1.5;"></div>
+      </div>
+      <div class="modal-footer" style="justify-content:space-between;">
+        <button class="btn-test-connection" id="btn-test-connection">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:5px;vertical-align:-2px;"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          Test Connection
+        </button>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-action-cancel" id="btn-cancel-modal">Cancel</button>
+          <button class="btn-action-save" id="btn-save-modal">Save &amp; Apply</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL 5: LOCAL AI STUDIO & MODEL GALLERY
+       ========================================================================= -->
+  <div class="modal-overlay" id="local-ai-modal">
+    <div class="modal-card modal-large">
+      <div class="modal-header">
+        <div class="modal-header-text">
+          <div class="badge-local-top">Local GGUF Runtime · Ollama</div>
+          <h3>Local AI Studio &amp; Model Gallery</h3>
+          <p class="modal-subtitle">Auto-detect, download, and launch open-weights LLMs. Prompts route directly through LOGOS &amp; TypeSafe Jev pipeline.</p>
+        </div>
+        <button class="btn-icon" id="btn-close-local-ai-modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        
+        <!-- Daemon Status & Quick Actions Bar -->
+        <div class="local-daemon-bar" id="local-daemon-bar">
+          <div class="daemon-info">
+            <span class="daemon-status-dot" id="daemon-status-dot">●</span>
+            <div class="daemon-text">
+              <span class="daemon-headline" id="daemon-headline">Detecting Ollama daemon...</span>
+              <span class="daemon-subtext" id="daemon-subtext">Checking system PATH and standard directories</span>
+            </div>
+          </div>
+          <div class="daemon-actions">
+            <button class="btn-daemon-action" id="btn-daemon-toggle" style="display:none;">
+              Start Ollama Daemon
+            </button>
+            <a href="https://ollama.com/download" target="_blank" class="btn-daemon-download" id="btn-daemon-download" style="display:none;">
+              ⬇️ Install Ollama
+            </a>
+          </div>
+        </div>
+
+        <!-- Real-Time Pull Progress Bar (Hidden unless pulling) -->
+        <div class="pull-progress-panel" id="pull-progress-panel" style="display:none;">
+          <div class="progress-meta">
+            <div class="progress-title-row">
+              <span class="progress-model-name" id="progress-model-name">Pulling model...</span>
+              <span class="progress-pct" id="progress-pct">0%</span>
+            </div>
+            <div class="progress-status-msg" id="progress-status-msg">Initiating download stream...</div>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- Curated Model Gallery Section -->
+        <div class="gallery-section-header">
+          <h4>Curated Models Catalog</h4>
+          <span class="gallery-hint">Selected models are fully compatible with LOGOS self-healing &amp; TypeSafe Jev classification</span>
+        </div>
+
+        <div class="model-gallery-grid" id="model-gallery-grid">
+          <!-- Dynamically populated cards with tag, size, vram, speed badge, description, download/connect button -->
+        </div>
+
+      </div>
+
+      <div class="modal-footer" style="justify-content:space-between;">
+        <div class="local-footer-hint">
+          <span class="hint-icon">💡</span>
+          <span>Tip: <strong>Gemma 2 (2B)</strong> or <strong>Qwen 2.5 Coder (7B)</strong> recommended for optimal latency and accuracy.</span>
+        </div>
+        <button class="btn-action-cancel" id="btn-close-local-ai-footer">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>
