@@ -5,8 +5,10 @@ Tests for BlueprintEngine, component todo list decomposition,
 and holographic memory ingestion.
 """
 
-import pytest
-from agent_core.logos.blueprint_engine import BlueprintEngine, ArchitectureBlueprint, BlueprintComponent
+from agent_core.logos.blueprint_engine import (
+    ArchitectureBlueprint,
+    BlueprintEngine,
+)
 from agent_core.logos.holographic_memory import HolographicMemoryEngine
 from agent_core.operator_interface import SandboxOperatorInterface, SandboxSessionReport
 
@@ -33,7 +35,9 @@ class TestBlueprintEngine:
 
     def test_math_decomposition(self):
         engine = BlueprintEngine()
-        blueprint = engine.generate_blueprint("Write a safe division function 'divide(a, b)' that handles zero divisor inputs.")
+        blueprint = engine.generate_blueprint(
+            "Write a safe division function 'divide(a, b)' that handles zero divisor inputs."
+        )
 
         assert isinstance(blueprint, ArchitectureBlueprint)
         assert blueprint.total_components >= 4

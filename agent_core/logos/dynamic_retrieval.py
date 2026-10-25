@@ -16,13 +16,15 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
+
 from agent_core.logos.axiomatic_engine import Axiom, AxiomaticEngine
 
 
 @dataclass
 class SearchResult:
     """A retrieved external document or knowledge snippet."""
+
     title: str
     snippet: str
     url: str
@@ -60,14 +62,28 @@ class DynamicAxiomRetriever:
             abstract_url = data.get("AbstractURL", "")
 
             if abstract:
-                results.append(SearchResult(title=heading or query, snippet=abstract, url=abstract_url, source="ddg_instant"))
+                results.append(
+                    SearchResult(
+                        title=heading or query,
+                        snippet=abstract,
+                        url=abstract_url,
+                        source="ddg_instant",
+                    )
+                )
 
             # Check related topics
             for topic in data.get("RelatedTopics", [])[:max_results]:
                 text = topic.get("Text", "")
                 t_url = topic.get("FirstURL", "")
                 if text:
-                    results.append(SearchResult(title=text[:40], snippet=text, url=t_url, source="ddg_related"))
+                    results.append(
+                        SearchResult(
+                            title=text[:40],
+                            snippet=text,
+                            url=t_url,
+                            source="ddg_related",
+                        )
+                    )
 
             if results:
                 return results[:max_results]
@@ -127,7 +143,7 @@ class DynamicAxiomRetriever:
             ax_id = f"AX_DYN_{abs(hash(res.title)) % 10000:04d}"
             statement = res.snippet
             formal_rule = f"Invariant({re.sub(r'[^a-zA-Z0-9_]', '_', res.title[:20])}) => Verified"
-            
+
             axiom = self.axiom_engine.register_axiom(
                 axiom_id=ax_id,
                 category="Dynamically Retrieved Knowledge",

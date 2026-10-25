@@ -10,14 +10,14 @@ computes dependency topological order, and constructs the Master Index blueprint
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 
 @dataclass
 class Subquestion:
     """A decomposed subquestion representing an angle of inquiry."""
+
     id: str
     dimension: str
     question: str

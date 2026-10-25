@@ -10,14 +10,16 @@ Unit tests for TypeSafe AI Jev Decision Engine and Primitives:
 """
 
 import time
+
 import pytest
+
 from agent_core.typesafe_jev import (
-    JevDecisionEngine,
-    JevChoice,
-    JevScore,
-    JevNoul,
-    TaskIntent,
     CodeTargetType,
+    JevChoice,
+    JevDecisionEngine,
+    JevNoul,
+    JevScore,
+    TaskIntent,
 )
 
 
@@ -82,12 +84,16 @@ class TestJevDecisionEngine:
         assert report.requires_sandbox.decision is False
 
     def test_mcp_operation_routing(self, engine):
-        report = engine.evaluate("Develop a custom MCP server for SQLite queries with tool definitions")
+        report = engine.evaluate(
+            "Develop a custom MCP server for SQLite queries with tool definitions"
+        )
         assert report.intent.value == TaskIntent.MCP_DEV
         assert report.is_mcp_operation.decision is True
 
     def test_math_reasoning_routing(self, engine):
-        report = engine.evaluate("Calculate Montgomery pair correlation for Riemann zeta function zeros")
+        report = engine.evaluate(
+            "Calculate Montgomery pair correlation for Riemann zeta function zeros"
+        )
         assert report.intent.value == TaskIntent.MATH_REASONING
 
     def test_interactive_canvas_detection(self, engine):

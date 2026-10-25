@@ -9,33 +9,33 @@ self-repair code, and leverage the LOGOS cognitive stack.
 
 from __future__ import annotations
 
-import json
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
-from agent_core.llm.base import BaseLLMProvider, LLMResponse
+from agent_core.llm.base import BaseLLMProvider
 from agent_core.llm.registry import LLMRegistry
-from agent_core.sandbox import CodeExecutionSandbox
-from agent_core.tools import ToolRegistry, ToolResult
-from agent_core.memory import ConversationBuffer, EpisodicStore
 from agent_core.logos import (
-    MasterIndexDecomposer,
-    DualFrameworkConvergenceEngine,
     AxiomaticEngine,
+    DualFrameworkConvergenceEngine,
+    DynamicAxiomRetriever,
     FractalReasoningEngine,
     HolographicMemoryEngine,
+    MasterIndexDecomposer,
     NASTopologyEngine,
-    DynamicAxiomRetriever,
     PonderingEngine,
 )
-from agent_core.logos.blueprint_engine import BlueprintEngine, ArchitectureBlueprint
-from agent_core.logos.recursive_auditor import RigorousAuditor, AuditReport
+from agent_core.logos.blueprint_engine import BlueprintEngine
+from agent_core.logos.recursive_auditor import RigorousAuditor
+from agent_core.memory import ConversationBuffer, EpisodicStore
+from agent_core.sandbox import CodeExecutionSandbox
+from agent_core.tools import ToolRegistry, ToolResult
 
 
 @dataclass
 class ProgressEvent:
     """Live telemetry event streamed during LOGOS + Sandbox pipeline execution."""
+
     phase: str  # e.g. "classification", "planning", "cognition", "blueprint", "implementation", "verification", "completed"
     status: str  # "started", "in_progress", "completed", "failed"
     message: str
@@ -58,6 +58,7 @@ class ProgressEvent:
 @dataclass
 class SandboxSessionReport:
     """Detailed execution telemetry from an LLM-driven sandbox session."""
+
     task: str
     status: str  # "success" or "failed"
     provider: str
@@ -132,8 +133,10 @@ class SandboxOperatorInterface:
             if provider_name in ("ollama",):
                 try:
                     from agent_core.llm.ollama_provider import OllamaProvider as _Ollama
+
                     if isinstance(_resolved, _Ollama) and not _resolved.is_available():
                         import sys
+
                         print(
                             f"[WARN] Ollama not reachable at {_resolved.host}. "
                             "Falling back to Mock provider. Run `ollama serve` to enable local inference.",
@@ -204,8 +207,20 @@ class SandboxOperatorInterface:
         progress_log: List[Dict[str, Any]] = []
         total_tokens = 0
 
-        def emit(phase: str, status: str, message: str, pct: int, details: Optional[Dict[str, Any]] = None):
-            ev = ProgressEvent(phase=phase, status=status, message=message, progress_pct=pct, details=details or {})
+        def emit(
+            phase: str,
+            status: str,
+            message: str,
+            pct: int,
+            details: Optional[Dict[str, Any]] = None,
+        ):
+            ev = ProgressEvent(
+                phase=phase,
+                status=status,
+                message=message,
+                progress_pct=pct,
+                details=details or {},
+            )
             progress_log.append(ev.to_dict())
             if progress_callback:
                 try:
@@ -216,19 +231,57 @@ class SandboxOperatorInterface:
             return ev
 
         # Phase 0: Classification (Jev Fast-Path)
-        emit("classification", "started", "TypeSafe AI Jev: Evaluating typed decision primitives & intent...", 5)
-        emit("classification", "completed", "Jev fast-path: sub-1ms intent & security boundary gate verified.", 10)
+        emit(
+            "classification",
+            "started",
+            "TypeSafe AI Jev: Evaluating typed decision primitives & intent...",
+            5,
+        )
+        emit(
+            "classification",
+            "completed",
+            "Jev fast-path: sub-1ms intent & security boundary gate verified.",
+            10,
+        )
 
         # Phase 1: Architectural Implementation Plan (Effective 10M-100M tokens support)
         massive_keywords = [
-            "100m", "10m", "chunked", "massive", "gta", "minecraft", "open world", 
-            "enterprise", "multi-module", "ide", "editor", "cursor", "vscode", 
-            "engine", "multiplayer", "unity", "unreal", "full stack", "fullstack", 
-            "saas", "platform", "real-time", "operating system", "os kernel", 
-            "compiler", "build gta", "build vice city", "vice city"
+            "100m",
+            "10m",
+            "chunked",
+            "massive",
+            "gta",
+            "minecraft",
+            "open world",
+            "enterprise",
+            "multi-module",
+            "ide",
+            "editor",
+            "cursor",
+            "vscode",
+            "engine",
+            "multiplayer",
+            "unity",
+            "unreal",
+            "full stack",
+            "fullstack",
+            "saas",
+            "platform",
+            "real-time",
+            "operating system",
+            "os kernel",
+            "compiler",
+            "build gta",
+            "build vice city",
+            "vice city",
         ]
         is_massive_chunked = any(k in task_description.lower() for k in massive_keywords)
-        emit("planning", "started", f"Formulating architectural implementation plan for {self.llm.provider_name}/{self.llm.model_name}...", 15)
+        emit(
+            "planning",
+            "started",
+            f"Formulating architectural implementation plan for {self.llm.provider_name}/{self.llm.model_name}...",
+            15,
+        )
 
         if is_massive_chunked:
             implementation_plan = (
@@ -242,22 +295,50 @@ class SandboxOperatorInterface:
         else:
             implementation_plan = f"Synthesized architecture plan for '{task_description}' adhering to LOGOS axiomatic constraints."
 
-        self.holographic_mem.store(f"Implementation Plan: {implementation_plan}", category="implementation_plan")
-        emit("planning", "completed", f"Plan synthesized ({len(implementation_plan)} chars) | Context boundary projected.", 25, {"plan": implementation_plan[:1000]})
+        self.holographic_mem.store(
+            f"Implementation Plan: {implementation_plan}",
+            category="implementation_plan",
+        )
+        emit(
+            "planning",
+            "completed",
+            f"Plan synthesized ({len(implementation_plan)} chars) | Context boundary projected.",
+            25,
+            {"plan": implementation_plan[:1000]},
+        )
 
         # Phase 2: LOGOS Cognition
-        emit("cognition", "started", "Running LOGOS: NAS topology search + multi-angle pondering...", 30)
+        emit(
+            "cognition",
+            "started",
+            "Running LOGOS: NAS topology search + multi-angle pondering...",
+            30,
+        )
         topology = self.nas.search_optimal_topology(task_description)
         pondering_synthesis = self.pondering.evaluate_multi_angle(task_description)
         subquestions = self.decomposer.decompose(task_description)
         f1_analysis = self.convergence.analyze_framework_1_classical(task_description)
         f2_analysis = self.convergence.analyze_framework_2_theory2(task_description)
-        alignment = self.convergence.construct_property_alignment_matrix(f1_analysis, f2_analysis, task_description)
-        emit("cognition", "completed", f"Topology: {topology.topology_type.value} | Invariants: {pondering_synthesis.qualified_properties_count} | Confidence >95%", 40)
+        alignment = self.convergence.construct_property_alignment_matrix(
+            f1_analysis, f2_analysis, task_description
+        )
+        emit(
+            "cognition",
+            "completed",
+            f"Topology: {topology.topology_type.value} | Invariants: {pondering_synthesis.qualified_properties_count} | Confidence >95%",
+            40,
+        )
 
         # Phase 3: Blueprint Generation
-        emit("blueprint", "started", "Generating architectural blueprint & component contracts...", 45)
-        invariants = [p.hypothesis for p in pondering_synthesis.qualified_properties if p.confidence >= 0.95]
+        emit(
+            "blueprint",
+            "started",
+            "Generating architectural blueprint & component contracts...",
+            45,
+        )
+        invariants = [
+            p.hypothesis for p in pondering_synthesis.qualified_properties if p.confidence >= 0.95
+        ]
         blueprint = self.blueprint_engine.generate_blueprint(
             task_description,
             topology_type=topology.topology_type.value,
@@ -266,31 +347,86 @@ class SandboxOperatorInterface:
         self.holographic_mem.store(f"Task: {task_description}", category="task_spec")
         self.holographic_mem.store(pondering_synthesis.synthesis_summary, category="pondering")
         self.holographic_mem.store_blueprint(blueprint)
-        emit("blueprint", "completed", f"Blueprint: {len(blueprint.components)} components | System: {blueprint.system_layout[:80]}", 50)
+        emit(
+            "blueprint",
+            "completed",
+            f"Blueprint: {len(blueprint.components)} components | System: {blueprint.system_layout[:80]}",
+            50,
+        )
 
         # Refined interactive application detection
         interactive_keywords = [
-            "game", "arcade", "canvas", "flappy", "snake", "tetris", "pong",
-            "breakout", "invader", "pacman", "tictactoe", "tic-tac-toe",
-            "maze", "minesweeper", "temple run", "runner", "gui",
-            "calculator app", "todo app", "web app", "html5 app",
-            "ide", "editor", "dashboard", "app", "tool", "studio", "platform"
+            "game",
+            "arcade",
+            "canvas",
+            "flappy",
+            "snake",
+            "tetris",
+            "pong",
+            "breakout",
+            "invader",
+            "pacman",
+            "tictactoe",
+            "tic-tac-toe",
+            "maze",
+            "minesweeper",
+            "temple run",
+            "runner",
+            "gui",
+            "calculator app",
+            "todo app",
+            "web app",
+            "html5 app",
+            "ide",
+            "editor",
+            "dashboard",
+            "app",
+            "tool",
+            "studio",
+            "platform",
         ]
         is_interactive = any(k in task_description.lower() for k in interactive_keywords)
         # Avoid treating algorithmic Python functions as interactive apps
-        if any(k in task_description.lower() for k in ["python", "def ", "function", "class ", "algorithm", "quicksort", "sort", "search", "divide", "fibonacci", "tree", "graph"]):
+        if any(
+            k in task_description.lower()
+            for k in [
+                "python",
+                "def ",
+                "function",
+                "class ",
+                "algorithm",
+                "quicksort",
+                "sort",
+                "search",
+                "divide",
+                "fibonacci",
+                "tree",
+                "graph",
+            ]
+        ):
             if not any(k in task_description.lower() for k in ["pygame", "html", "canvas", "game"]):
                 is_interactive = False
 
         # Phase 4: Implementation (Effective 10M-100M tokens via chunking)
-        emit("implementation", "started", f"Starting implementation phase — effective limit {self.max_effective_tokens:,} tokens via chunked generation...", 55)
+        emit(
+            "implementation",
+            "started",
+            f"Starting implementation phase — effective limit {self.max_effective_tokens:,} tokens via chunked generation...",
+            55,
+        )
 
         if is_massive_chunked:
             num_components = len(blueprint.components)
             assembled_parts = []
             for idx, comp in enumerate(blueprint.components[:4]):
                 pct = 55 + int((idx / max(1, min(4, num_components))) * 25)
-                emit("implementation", "in_progress", f"Synthesizing component {idx+1}/{min(4, num_components)}: {comp.name} ({comp.subsystem})...", pct, {"component": comp.name})
+                emit(
+                    "implementation",
+                    "in_progress",
+                    f"Synthesizing component {idx + 1}/{min(4, num_components)}: {comp.name} ({comp.subsystem})...",
+                    pct,
+                    {"component": comp.name},
+                )
                 comp_prompt = (
                     f"TARGET TASK: {task_description}\n"
                     f"COMPONENT: {comp.name} ({comp.subsystem})\n"
@@ -299,37 +435,64 @@ class SandboxOperatorInterface:
                 )
                 try:
                     comp_resp = self.llm.generate(prompt=comp_prompt, max_tokens=2048)
-                    part_code = self.llm.extract_code_block(comp_resp.content, "javascript") or self.llm.extract_code_block(comp_resp.content, "html") or self.llm.extract_code_block(comp_resp.content, "python") or comp_resp.content.strip()
-                    assembled_parts.append(f"// Component {idx+1}: {comp.name}\n{part_code}")
-                    total_tokens += getattr(comp_resp, 'total_tokens', 800)
-                except Exception as e:
-                    assembled_parts.append(f"// Component {idx+1}: {comp.name}\n// Invariant fallback")
+                    part_code = (
+                        self.llm.extract_code_block(comp_resp.content, "javascript")
+                        or self.llm.extract_code_block(comp_resp.content, "html")
+                        or self.llm.extract_code_block(comp_resp.content, "python")
+                        or comp_resp.content.strip()
+                    )
+                    assembled_parts.append(f"// Component {idx + 1}: {comp.name}\n{part_code}")
+                    total_tokens += getattr(comp_resp, "total_tokens", 800)
+                except Exception:
+                    assembled_parts.append(
+                        f"// Component {idx + 1}: {comp.name}\n// Invariant fallback"
+                    )
 
             if is_interactive:
-                final_code = "<!DOCTYPE html>\n<html>\n<head><meta charset='utf-8'><title>" + task_description + "</title><style>body{margin:0;background:#111;color:#fff;font-family:sans-serif;}</style></head>\n<body>\n<canvas id='c'></canvas>\n<script>\n" + "\n\n".join(assembled_parts) + "\n</script>\n</body>\n</html>"
+                final_code = (
+                    "<!DOCTYPE html>\n<html>\n<head><meta charset='utf-8'><title>"
+                    + task_description
+                    + "</title><style>body{margin:0;background:#111;color:#fff;font-family:sans-serif;}</style></head>\n<body>\n<canvas id='c'></canvas>\n<script>\n"
+                    + "\n\n".join(assembled_parts)
+                    + "\n</script>\n</body>\n</html>"
+                )
             else:
                 final_code = "\n\n".join(assembled_parts)
             code = final_code
             success = True
             test_logs = f"Assembled {len(assembled_parts)} components | Total effective tokens: {self.max_effective_tokens:,}"
-            history.append({
-                "attempt": 1,
-                "code": code,
-                "tests": "Chunked component assembly syntax validation",
-                "success": success,
-                "logs": test_logs,
-            })
+            history.append(
+                {
+                    "attempt": 1,
+                    "code": code,
+                    "tests": "Chunked component assembly syntax validation",
+                    "success": success,
+                    "logs": test_logs,
+                }
+            )
             review = {
                 "approved": True,
                 "security_check": "passed",
                 "style_score": 9.9,
             }
-            emit("implementation", "completed", f"All {len(assembled_parts)} components synthesized and integrated | Effective: {self.max_effective_tokens:,} tokens", 85)
+            emit(
+                "implementation",
+                "completed",
+                f"All {len(assembled_parts)} components synthesized and integrated | Effective: {self.max_effective_tokens:,} tokens",
+                85,
+            )
 
         elif is_interactive:
-            emit("implementation", "in_progress", "Synthesizing unified interactive application with embedded Canvas loop...", 65)
+            emit(
+                "implementation",
+                "in_progress",
+                "Synthesizing unified interactive application with embedded Canvas loop...",
+                65,
+            )
             # High-performance single-pass path for games and standalone applications
-            todo_text = "\n".join(f"- [{c.id}] {c.name} ({c.subsystem}): {c.purpose}" for c in blueprint.components)
+            todo_text = "\n".join(
+                f"- [{c.id}] {c.name} ({c.subsystem}): {c.purpose}" for c in blueprint.components
+            )
             axiomatic_prompt = (
                 f"TARGET TASK: {task_description}\n\n"
                 f"ARCHITECTURAL SYSTEM LAYOUT: {blueprint.system_layout}\n"
@@ -355,7 +518,7 @@ class SandboxOperatorInterface:
                     system_prompt="You are a Principal Game and Application Engineer. Output complete, working code in a markdown block.",
                     max_tokens=2048,
                 )
-                total_tokens += getattr(code_resp, 'total_tokens', 1200)
+                total_tokens += getattr(code_resp, "total_tokens", 1200)
             except Exception as e:
                 return SandboxSessionReport(
                     task=task_description,
@@ -363,9 +526,16 @@ class SandboxOperatorInterface:
                     final_code=f"# LLM Provider Error ({self.llm.provider_name} - {self.llm.model_name}):\n# {str(e)}\n# Please check your API key or local daemon status in Settings.",
                     test_logs=f"LLM Provider Error: {str(e)}",
                     iterations=1,
-                    review={"security_check": "failed", "style_score": 0.0, "error": str(e)},
+                    review={
+                        "security_check": "failed",
+                        "style_score": 0.0,
+                        "error": str(e),
+                    },
                     provider=self.llm.provider_name,
                     model=self.llm.model_name,
+                    topology_used="n/a (provider error)",
+                    qualified_properties_count=0,
+                    holographic_stats={},
                     elapsed_time_s=time.perf_counter() - t0,
                     implementation_plan=implementation_plan,
                     progress_log=progress_log,
@@ -386,32 +556,47 @@ class SandboxOperatorInterface:
             test_logs = "Application structure and runtime logic verified."
             if "def " in code or "import " in code:
                 import ast
+
                 try:
                     ast.parse(code)
-                    test_logs = "Python syntax tree successfully verified (ast.parse OK). Ready to run."
+                    test_logs = (
+                        "Python syntax tree successfully verified (ast.parse OK). Ready to run."
+                    )
                 except Exception as e:
                     success = False
                     test_logs = f"Syntax check: {e}"
 
-            history.append({
-                "attempt": 1,
-                "code": code,
-                "tests": "Interactive application syntax validation",
-                "success": success,
-                "logs": test_logs,
-            })
+            history.append(
+                {
+                    "attempt": 1,
+                    "code": code,
+                    "tests": "Interactive application syntax validation",
+                    "success": success,
+                    "logs": test_logs,
+                }
+            )
 
             review = {
                 "approved": True,
-                "security_check": "passed" if ("os.system" not in code and "eval(" not in code) else "warning",
+                "security_check": "passed"
+                if ("os.system" not in code and "eval(" not in code)
+                else "warning",
                 "style_score": 9.8 if success else 8.5,
             }
 
         else:
-            emit("implementation", "in_progress", "Synthesizing axiomatic implementation adhering to subsystem contracts...", 65)
+            emit(
+                "implementation",
+                "in_progress",
+                "Synthesizing axiomatic implementation adhering to subsystem contracts...",
+                65,
+            )
             # Algorithmic function path: Invariant-guided Coder + Sandbox verification
-            todo_text = "\n".join(f"- [{c.id}] {c.name} ({c.subsystem}): {c.purpose} (Contract: {c.contract})" for c in blueprint.components)
-            
+            todo_text = "\n".join(
+                f"- [{c.id}] {c.name} ({c.subsystem}): {c.purpose} (Contract: {c.contract})"
+                for c in blueprint.components
+            )
+
             axiomatic_prompt = (
                 f"TARGET TASK: {task_description}\n\n"
                 f"ARCHITECTURAL SYSTEM LAYOUT: {blueprint.system_layout}\n"
@@ -439,7 +624,7 @@ class SandboxOperatorInterface:
                     system_prompt="You are a Principal Software Engineer. Output ONLY Python code inside ```python ``` blocks.",
                     max_tokens=512,
                 )
-                total_tokens += getattr(code_resp, 'total_tokens', 250)
+                total_tokens += getattr(code_resp, "total_tokens", 250)
             except Exception as e:
                 return SandboxSessionReport(
                     task=task_description,
@@ -447,9 +632,16 @@ class SandboxOperatorInterface:
                     final_code=f"# LLM Provider Error ({self.llm.provider_name} - {self.llm.model_name}):\n# {str(e)}\n# Please check your API key or local daemon status in Settings.",
                     test_logs=f"LLM Provider Error: {str(e)}",
                     iterations=1,
-                    review={"security_check": "failed", "style_score": 0.0, "error": str(e)},
+                    review={
+                        "security_check": "failed",
+                        "style_score": 0.0,
+                        "error": str(e),
+                    },
                     provider=self.llm.provider_name,
                     model=self.llm.model_name,
+                    topology_used="n/a (provider error)",
+                    qualified_properties_count=0,
+                    holographic_stats={},
                     elapsed_time_s=time.perf_counter() - t0,
                     implementation_plan=implementation_plan,
                     progress_log=progress_log,
@@ -483,7 +675,12 @@ class SandboxOperatorInterface:
             effective_retries = 2 if self.llm.provider_name == "ollama" else max_retries
 
             for attempt in range(effective_retries):
-                emit("verification", "in_progress", f"Executing sandbox harness attempt {attempt + 1}/{effective_retries}...", 75 + attempt * 5)
+                emit(
+                    "verification",
+                    "in_progress",
+                    f"Executing sandbox harness attempt {attempt + 1}/{effective_retries}...",
+                    75 + attempt * 5,
+                )
                 # Generate test harness
                 test_prompt = (
                     f"TARGET TASK: {task_description}\n"
@@ -502,7 +699,7 @@ class SandboxOperatorInterface:
                     system_prompt="You are a Senior QA Engineer. Output ONLY Python assertions inside ```python ``` block.",
                     max_tokens=256,
                 )
-                total_tokens += getattr(test_resp, 'total_tokens', 200)
+                total_tokens += getattr(test_resp, "total_tokens", 200)
                 tests = self.llm.extract_code_block(test_resp.content, "python")
                 if not tests:
                     tests = test_resp.content.strip()
@@ -511,7 +708,23 @@ class SandboxOperatorInterface:
                 test_lines = tests.splitlines()
                 while test_lines and not test_lines[-1].strip():
                     test_lines.pop()
-                if test_lines and any(test_lines[-1].strip().endswith(bad) for bad in [":", "==", "!=", "assert", "in", "and", "or", "(", "[", "{", ",", "="]):
+                if test_lines and any(
+                    test_lines[-1].strip().endswith(bad)
+                    for bad in [
+                        ":",
+                        "==",
+                        "!=",
+                        "assert",
+                        "in",
+                        "and",
+                        "or",
+                        "(",
+                        "[",
+                        "{",
+                        ",",
+                        "=",
+                    ]
+                ):
                     test_lines.pop()
                 tests = "\n".join(test_lines)
 
@@ -521,30 +734,37 @@ class SandboxOperatorInterface:
                     exec_script = tests
 
                 # Execute in sandbox
-                success, logs = self.sandbox.execute_script(exec_script, filename="sandbox_test_runner.py")
+                success, logs = self.sandbox.execute_script(
+                    exec_script, filename="sandbox_test_runner.py"
+                )
                 test_logs = logs
 
                 # If test execution had a syntax error in the test assertions, verify code itself
                 if not success and "SyntaxError" in logs:
                     try:
                         import ast
+
                         ast.parse(code)
                         success = True
                         test_logs = "Code syntax and structure verified (AST parsed successfully)."
                     except Exception:
                         pass
 
-                history.append({
-                    "attempt": attempt + 1,
-                    "code": code,
-                    "tests": tests,
-                    "success": success,
-                    "logs": test_logs,
-                })
+                history.append(
+                    {
+                        "attempt": attempt + 1,
+                        "code": code,
+                        "tests": tests,
+                        "success": success,
+                        "logs": test_logs,
+                    }
+                )
 
                 review = {
                     "approved": True,
-                    "security_check": "passed" if ("eval" not in code and "os.system" not in code) else "warning",
+                    "security_check": "passed"
+                    if ("eval" not in code and "os.system" not in code)
+                    else "warning",
                     "style_score": 9.5,
                 }
             else:
@@ -552,7 +772,12 @@ class SandboxOperatorInterface:
                 effective_retries = 2 if self.llm.provider_name == "ollama" else max_retries
 
                 for attempt in range(effective_retries):
-                    emit("verification", "in_progress", f"Executing sandbox harness attempt {attempt + 1}/{effective_retries}...", 75 + attempt * 5)
+                    emit(
+                        "verification",
+                        "in_progress",
+                        f"Executing sandbox harness attempt {attempt + 1}/{effective_retries}...",
+                        75 + attempt * 5,
+                    )
                     # Generate test harness
                     test_prompt = (
                         f"TARGET TASK: {task_description}\n"
@@ -571,7 +796,7 @@ class SandboxOperatorInterface:
                         system_prompt="You are a Senior QA Engineer. Output ONLY Python assertions inside ```python ``` block.",
                         max_tokens=256,
                     )
-                    total_tokens += getattr(test_resp, 'total_tokens', 200)
+                    total_tokens += getattr(test_resp, "total_tokens", 200)
                     tests = self.llm.extract_code_block(test_resp.content, "python")
                     if not tests:
                         tests = test_resp.content.strip()
@@ -580,7 +805,23 @@ class SandboxOperatorInterface:
                     test_lines = tests.splitlines()
                     while test_lines and not test_lines[-1].strip():
                         test_lines.pop()
-                    if test_lines and any(test_lines[-1].strip().endswith(bad) for bad in [":", "==", "!=", "assert", "in", "and", "or", "(", "[", "{", ",", "="]):
+                    if test_lines and any(
+                        test_lines[-1].strip().endswith(bad)
+                        for bad in [
+                            ":",
+                            "==",
+                            "!=",
+                            "assert",
+                            "in",
+                            "and",
+                            "or",
+                            "(",
+                            "[",
+                            "{",
+                            ",",
+                            "=",
+                        ]
+                    ):
                         test_lines.pop()
                     tests = "\n".join(test_lines)
 
@@ -590,32 +831,42 @@ class SandboxOperatorInterface:
                         exec_script = tests
 
                     # Execute in sandbox
-                    success, logs = self.sandbox.execute_script(exec_script, filename="sandbox_test_runner.py")
+                    success, logs = self.sandbox.execute_script(
+                        exec_script, filename="sandbox_test_runner.py"
+                    )
                     test_logs = logs
 
                     # If test execution had a syntax error in the test assertions, verify code itself
                     if not success and "SyntaxError" in logs:
                         try:
                             import ast
+
                             ast.parse(code)
                             success = True
-                            test_logs = "Code syntax and structure verified (AST parsed successfully)."
+                            test_logs = (
+                                "Code syntax and structure verified (AST parsed successfully)."
+                            )
                         except Exception:
                             pass
 
-                    history.append({
-                        "attempt": attempt + 1,
-                        "code": code,
-                        "tests": tests,
-                        "success": success,
-                        "logs": test_logs,
-                    })
+                    history.append(
+                        {
+                            "attempt": attempt + 1,
+                            "code": code,
+                            "tests": tests,
+                            "success": success,
+                            "logs": test_logs,
+                        }
+                    )
 
                     if success:
                         break
                     else:
                         error_logs = logs
-                        self.holographic_mem.store(f"Attempt {attempt + 1} failed: {logs}", category="error_feedback")
+                        self.holographic_mem.store(
+                            f"Attempt {attempt + 1} failed: {logs}",
+                            category="error_feedback",
+                        )
                         repair_prompt = (
                             f"TARGET TASK: {task_description}\n"
                             f"Previous Failing Code:\n```python\n{code}\n```\n"
@@ -628,14 +879,16 @@ class SandboxOperatorInterface:
                             system_prompt="You are an expert debugger repairing code based on test execution logs. Output ONLY python code.",
                             max_tokens=256,
                         )
-                        total_tokens += getattr(repair_resp, 'total_tokens', 250)
+                        total_tokens += getattr(repair_resp, "total_tokens", 250)
                         repaired = self.llm.extract_code_block(repair_resp.content, "python")
                         if repaired:
                             code = repaired
 
                 review = {
                     "approved": success,
-                    "security_check": "passed" if ("eval" not in code and "os.system" not in code) else "failed",
+                    "security_check": "passed"
+                    if ("eval" not in code and "os.system" not in code)
+                    else "failed",
                     "style_score": 9.5 if success else 6.0,
                 }
 
@@ -644,7 +897,12 @@ class SandboxOperatorInterface:
         # 1. First output (OO_1) is sent for mistakes -> synthesizes OO_2.
         # 2. That generated output (OO_2) is sent AGAIN for mistakes -> synthesizes OO_3.
         # 3. Result (OO_3) == final output answer.
-        emit("audit", "in_progress", "Executing recursive dual-pass fixed-point audit convergence...", 90)
+        emit(
+            "audit",
+            "in_progress",
+            "Executing recursive dual-pass fixed-point audit convergence...",
+            90,
+        )
         current_code = code
         audit_history: List[Dict[str, Any]] = []
 
@@ -686,7 +944,7 @@ class SandboxOperatorInterface:
                     system_prompt="You are a Principal Software Engineer repairing defects. Output ONLY code inside a markdown block.",
                     max_tokens=1536,
                 )
-                total_tokens += getattr(refine_resp, 'total_tokens', 800)
+                total_tokens += getattr(refine_resp, "total_tokens", 800)
                 next_code = self.llm.extract_code_block(refine_resp.content, "html")
                 if not next_code:
                     next_code = self.llm.extract_code_block(refine_resp.content, "python")
@@ -698,15 +956,21 @@ class SandboxOperatorInterface:
                     system_prompt="You are an expert debugger eliminating audit defects. Output ONLY Python code inside ```python ``` block.",
                     max_tokens=256,
                 )
-                total_tokens += getattr(refine_resp, 'total_tokens', 250)
+                total_tokens += getattr(refine_resp, "total_tokens", 250)
                 next_code = self.llm.extract_code_block(refine_resp.content, "python")
                 if not next_code:
                     next_code = refine_resp.content.strip()
 
             if next_code:
                 # If interactive game was being audited, ensure next_code doesn't degrade into a non-game stub
-                if is_interactive and ("<canvas" in current_code.lower() or "<html" in current_code.lower()):
-                    if "<canvas" in next_code.lower() or "<html" in next_code.lower() or "requestanimationframe" in next_code.lower():
+                if is_interactive and (
+                    "<canvas" in current_code.lower() or "<html" in current_code.lower()
+                ):
+                    if (
+                        "<canvas" in next_code.lower()
+                        or "<html" in next_code.lower()
+                        or "requestanimationframe" in next_code.lower()
+                    ):
                         current_code = next_code
                 else:
                     current_code = next_code
@@ -725,7 +989,12 @@ class SandboxOperatorInterface:
             success=success,
         )
 
-        emit("completed", "completed", "100M+ effective token holographic pipeline finished with zero defects.", 100)
+        emit(
+            "completed",
+            "completed",
+            "100M+ effective token holographic pipeline finished with zero defects.",
+            100,
+        )
 
         elapsed = time.perf_counter() - t0
         return SandboxSessionReport(

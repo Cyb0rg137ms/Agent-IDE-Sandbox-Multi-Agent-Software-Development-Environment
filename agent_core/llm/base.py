@@ -7,7 +7,6 @@ Supports both local GGUF/Ollama runtimes and cloud frontier APIs (OpenAI, Claude
 
 from __future__ import annotations
 
-import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
@@ -16,6 +15,7 @@ from typing import Any, Dict, List, Optional
 @dataclass
 class LLMResponse:
     """Standardized response from any LLM provider."""
+
     content: str
     model: str
     provider: str
@@ -83,18 +83,18 @@ class BaseLLMProvider(ABC):
         """Utility to extract fenced code blocks from markdown responses."""
         if not text:
             return ""
-        
+
         marker = f"```{language}"
         if marker in text:
             parts = text.split(marker, 1)[1]
             if "```" in parts:
                 return parts.split("```", 1)[0].strip()
             return parts.strip()
-            
+
         if "```" in text:
             parts = text.split("```", 1)[1]
             if "```" in parts:
                 return parts.split("```", 1)[0].strip()
             return parts.strip()
-            
+
         return text.strip()

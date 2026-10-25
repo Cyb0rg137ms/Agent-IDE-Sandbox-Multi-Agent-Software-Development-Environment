@@ -8,7 +8,6 @@ custom MCP Server Studio development, projects, artifacts, and persistent chats.
 
 from __future__ import annotations
 
-import json
 import os
 import time
 import uuid
@@ -16,33 +15,25 @@ from typing import Any, Callable, Dict, List, Optional
 
 from agent_core.llm import (
     LLMRegistry,
-    BaseLLMProvider,
-    OllamaProvider,
     MockLLMProvider,
+    OllamaProvider,
 )
 from agent_core.llm.ollama_launcher import OllamaAutoLauncher
-from agent_core.operator_interface import SandboxOperatorInterface, SandboxSessionReport, ProgressEvent
-from agent_core.logos import (
-    MasterIndexDecomposer,
-    PonderingEngine,
-    NASTopologyEngine,
-    FractalReasoningEngine,
-    HolographicMemoryEngine,
+from agent_core.mcp_studio import (
+    MCPSandboxTester,
+    MCPServerDefinition,
+    MCPServerScaffolder,
+    MCPToolDefinition,
+    MCPToolParameter,
+    get_default_mcp_presets,
+)
+from agent_core.operator_interface import (
+    ProgressEvent,
+    SandboxOperatorInterface,
 )
 from agent_core.typesafe_jev import (
     JevDecisionEngine,
-    JevDecisionReport,
     TaskIntent,
-    CodeTargetType,
-)
-from agent_core.mcp_studio import (
-    MCPToolDefinition,
-    MCPToolParameter,
-    MCPResourceDefinition,
-    MCPServerDefinition,
-    MCPServerScaffolder,
-    MCPSandboxTester,
-    get_default_mcp_presets,
 )
 
 
@@ -65,7 +56,9 @@ class ChatSessionManager:
         self.jev_engine = JevDecisionEngine()
 
         # Ollama Auto-Launcher & Local AI Studio
-        self.ollama_launcher = OllamaAutoLauncher(host=self.custom_endpoint or "http://127.0.0.1:11434")
+        self.ollama_launcher = OllamaAutoLauncher(
+            host=self.custom_endpoint or "http://127.0.0.1:11434"
+        )
 
         # MCP Tester
         self.mcp_tester = MCPSandboxTester()
@@ -108,73 +101,87 @@ class ChatSessionManager:
                 lines = _snake_html.splitlines()
                 _snake_html = "\n".join(lines[1:-1] if lines[-1] == "```" else lines[1:])
 
-        self.artifacts.append({
-            "id": "art-snake-game",
-            "title": "Snake Arcade — HTML5 Canvas Game",
-            "type": "html_app",
-            "language": "html",
-            "code": _snake_html,
-            "created_at": time.time() - 3600,
-            "status": "verified",
-        })
+        self.artifacts.append(
+            {
+                "id": "art-snake-game",
+                "title": "Snake Arcade — HTML5 Canvas Game",
+                "type": "html_app",
+                "language": "html",
+                "code": _snake_html,
+                "created_at": time.time() - 3600,
+                "status": "verified",
+            }
+        )
 
         # Breakout / brick breaker
         _breakout_html = _mock._synthesize_interactive_application("breakout brick breaker game")
         if not _breakout_html:
-            _breakout_html = _mock.generate("create a breakout game with neon theme in html5").content
+            _breakout_html = _mock.generate(
+                "create a breakout game with neon theme in html5"
+            ).content
             if _breakout_html.startswith("```"):
                 lines = _breakout_html.splitlines()
                 _breakout_html = "\n".join(lines[1:-1] if lines[-1] == "```" else lines[1:])
 
-        self.artifacts.append({
-            "id": "art-breakout",
-            "title": "Breakout — Neon Brick Breaker",
-            "type": "html_app",
-            "language": "html",
-            "code": _breakout_html,
-            "created_at": time.time() - 2400,
-            "status": "verified",
-        })
+        self.artifacts.append(
+            {
+                "id": "art-breakout",
+                "title": "Breakout — Neon Brick Breaker",
+                "type": "html_app",
+                "language": "html",
+                "code": _breakout_html,
+                "created_at": time.time() - 2400,
+                "status": "verified",
+            }
+        )
 
         # Calculator
         _calc_html = _mock._synthesize_interactive_application("scientific calculator")
         if not _calc_html:
-            _calc_html = _mock.generate("build a beautiful scientific calculator web app in html").content
+            _calc_html = _mock.generate(
+                "build a beautiful scientific calculator web app in html"
+            ).content
             if _calc_html.startswith("```"):
                 lines = _calc_html.splitlines()
                 _calc_html = "\n".join(lines[1:-1] if lines[-1] == "```" else lines[1:])
 
-        self.artifacts.append({
-            "id": "art-calculator",
-            "title": "Scientific Calculator App",
-            "type": "html_app",
-            "language": "html",
-            "code": _calc_html,
-            "created_at": time.time() - 1800,
-            "status": "verified",
-        })
+        self.artifacts.append(
+            {
+                "id": "art-calculator",
+                "title": "Scientific Calculator App",
+                "type": "html_app",
+                "language": "html",
+                "code": _calc_html,
+                "created_at": time.time() - 1800,
+                "status": "verified",
+            }
+        )
 
-        self.artifacts.append({
-            "id": "art-safe-division",
-            "title": "Safe Division Invariant Guard",
-            "type": "python_script",
-            "language": "python",
-            "code": "def divide(a: float, b: float) -> float:\n    \"\"\"Divide safely handling zero divisor invariant.\"\"\"\n    if b == 0:\n        return 0.0\n    return a / b\n",
-            "created_at": time.time() - 600,
-            "status": "passed_tests",
-        })
+        self.artifacts.append(
+            {
+                "id": "art-safe-division",
+                "title": "Safe Division Invariant Guard",
+                "type": "python_script",
+                "language": "python",
+                "code": 'def divide(a: float, b: float) -> float:\n    """Divide safely handling zero divisor invariant."""\n    if b == 0:\n        return 0.0\n    return a / b\n',
+                "created_at": time.time() - 600,
+                "status": "passed_tests",
+            }
+        )
 
         _temple_html = _mock._synthesize_interactive_application("temple run")
         if _temple_html:
-            self.artifacts.append({
-                "id": "art-temple-run",
-                "title": "Temple Run — 3D Runway Runner",
-                "type": "html_app",
-                "language": "html",
-                "code": _temple_html,
-                "created_at": time.time() - 300,
-                "status": "verified",
-            })
+            self.artifacts.append(
+                {
+                    "id": "art-temple-run",
+                    "title": "Temple Run — 3D Runway Runner",
+                    "type": "html_app",
+                    "language": "html",
+                    "code": _temple_html,
+                    "created_at": time.time() - 300,
+                    "status": "verified",
+                }
+            )
 
     def get_status(self) -> Dict[str, Any]:
         """Audits current environment, active provider, and available keys."""
@@ -225,10 +232,20 @@ class ChatSessionManager:
         return {
             "local_models": local_models,
             "presets": {
-                "ollama": local_models if local_models else ["qwen2.5-coder:7b", "deepseek-r1:14b", "llama3.2:3b"],
+                "ollama": local_models
+                if local_models
+                else ["qwen2.5-coder:7b", "deepseek-r1:14b", "llama3.2:3b"],
                 "openai": ["gpt-4o", "gpt-4o-mini", "o1", "o3-mini"],
-                "anthropic": ["claude-3-7-sonnet-20250219", "claude-3-5-sonnet-20241022", "claude-3-opus-20240229"],
-                "claude": ["claude-3-7-sonnet-20250219", "claude-3-5-sonnet-20241022", "claude-3-opus-20240229"],
+                "anthropic": [
+                    "claude-3-7-sonnet-20250219",
+                    "claude-3-5-sonnet-20241022",
+                    "claude-3-opus-20240229",
+                ],
+                "claude": [
+                    "claude-3-7-sonnet-20250219",
+                    "claude-3-5-sonnet-20241022",
+                    "claude-3-opus-20240229",
+                ],
                 "grok": ["grok-2-latest", "grok-beta"],
                 "gemini": ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"],
                 "mock": ["mock-developer-v1"],
@@ -278,7 +295,11 @@ class ChatSessionManager:
 
         return self.get_status()
 
-    def process_chat(self, prompt: str, progress_callback: Optional[Callable[[ProgressEvent], None]] = None) -> Dict[str, Any]:
+    def process_chat(
+        self,
+        prompt: str,
+        progress_callback: Optional[Callable[[ProgressEvent], None]] = None,
+    ) -> Dict[str, Any]:
         """
         Processes a user prompt through TypeSafe AI Jev Fast Decision Pipeline,
         LOGOS cognitive architecture, and isolated sandbox execution.
@@ -306,8 +327,29 @@ class ChatSessionManager:
             }
 
         # Step 2: Determine if Sandbox Execution or Conversational
-        is_explanation = p_clean.lower().startswith(("explain", "what is", "what are", "why", "describe", "overview", "tell me about")) and not any(
-            k in p_clean.lower() for k in ["write code", "implement", "def ", "class ", "write a", "write function", "build", "create", "make"]
+        is_explanation = p_clean.lower().startswith(
+            (
+                "explain",
+                "what is",
+                "what are",
+                "why",
+                "describe",
+                "overview",
+                "tell me about",
+            )
+        ) and not any(
+            k in p_clean.lower()
+            for k in [
+                "write code",
+                "implement",
+                "def ",
+                "class ",
+                "write a",
+                "write function",
+                "build",
+                "create",
+                "make",
+            ]
         )
         if is_explanation:
             is_coding = False
@@ -318,9 +360,24 @@ class ChatSessionManager:
                 or any(
                     k in p_clean.lower()
                     for k in [
-                        "write", "code", "implement", "def ", "class ", "fix", "solve",
-                        "divide", "algorithm", "script", "program", "compile", "benchmark",
-                        "build", "create a", "make a", "develop", "design"
+                        "write",
+                        "code",
+                        "implement",
+                        "def ",
+                        "class ",
+                        "fix",
+                        "solve",
+                        "divide",
+                        "algorithm",
+                        "script",
+                        "program",
+                        "compile",
+                        "benchmark",
+                        "build",
+                        "create a",
+                        "make a",
+                        "develop",
+                        "design",
                     ]
                 )
             )
@@ -331,10 +388,10 @@ class ChatSessionManager:
             # Run through optimized sandbox operator interface
             try:
                 report = self.operator.solve_task(
-                    p_clean, 
-                    max_retries=self.max_retries, 
+                    p_clean,
+                    max_retries=self.max_retries,
                     progress_callback=progress_callback,
-                    conversation_history=context
+                    conversation_history=context,
                 )
             except (ConnectionError, OSError, Exception) as _llm_err:
                 err_result = self._llm_error_result(p_clean, t0, _llm_err)
@@ -351,13 +408,29 @@ class ChatSessionManager:
                 "subquestions": [
                     f"Architecture & State for: '{p_clean[:60]}...'",
                     "Execution invariants, memory bounds, and stability",
-                    "Synthesized runtime validation and safety audit"
+                    "Synthesized runtime validation and safety audit",
                 ],
                 "qualified_properties": [
-                    {"name": "TypeSafe Jev Decision Gate", "confidence": jev_report.intent.confidence, "hypothesis": f"Intent: {jev_report.intent.value.value}, Target: {jev_report.code_target.value.value}"},
-                    {"name": "Structural Invariant Guard", "confidence": 0.985, "hypothesis": "Validated memory bounds, type signatures, and runtime loop stability."},
-                    {"name": "Execution Completeness", "confidence": 0.962, "hypothesis": "Self-contained logic without unfulfilled foreign module dependencies."},
-                    {"name": "Security Boundary", "confidence": 0.990, "hypothesis": "Zero unconstrained subshell escapes or malicious bytecodes."}
+                    {
+                        "name": "TypeSafe Jev Decision Gate",
+                        "confidence": jev_report.intent.confidence,
+                        "hypothesis": f"Intent: {jev_report.intent.value.value}, Target: {jev_report.code_target.value.value}",
+                    },
+                    {
+                        "name": "Structural Invariant Guard",
+                        "confidence": 0.985,
+                        "hypothesis": "Validated memory bounds, type signatures, and runtime loop stability.",
+                    },
+                    {
+                        "name": "Execution Completeness",
+                        "confidence": 0.962,
+                        "hypothesis": "Self-contained logic without unfulfilled foreign module dependencies.",
+                    },
+                    {
+                        "name": "Security Boundary",
+                        "confidence": 0.990,
+                        "hypothesis": "Zero unconstrained subshell escapes or malicious bytecodes.",
+                    },
                 ],
                 "mera_summary": self.operator.fractal_mera.coarse_grain_summary(multiscale),
                 "holographic_stats": report.holographic_stats,
@@ -368,10 +441,23 @@ class ChatSessionManager:
                 "effective_tokens": getattr(report, "effective_tokens", 100_000_000),
                 "total_tokens_used": getattr(report, "total_tokens_used", 1200),
                 "implementation_plan": getattr(report, "implementation_plan", None),
-                "progress_log": [e.to_dict() if hasattr(e, "to_dict") else e for e in getattr(report, "progress_log", [])],
+                "progress_log": [
+                    e.to_dict() if hasattr(e, "to_dict") else e
+                    for e in getattr(report, "progress_log", [])
+                ],
             }
 
-            is_app = any(k in report.final_code.lower() for k in ["<html", "<canvas", "<!doctype", "game", "window.", "document."])
+            is_app = any(
+                k in report.final_code.lower()
+                for k in [
+                    "<html",
+                    "<canvas",
+                    "<!doctype",
+                    "game",
+                    "window.",
+                    "document.",
+                ]
+            )
             if is_app:
                 reply_text = (
                     f"Here is the complete, self-contained **{p_clean}** solution built with the "
@@ -398,15 +484,17 @@ class ChatSessionManager:
 
             # Record artifact
             artifact_id = f"art-{uuid.uuid4().hex[:8]}"
-            self.artifacts.append({
-                "id": artifact_id,
-                "title": f"Artifact: {p_clean[:40]}",
-                "type": "html_app" if is_app else "python_script",
-                "language": "html" if is_app else "python",
-                "code": report.final_code,
-                "created_at": time.time(),
-                "status": report.status,
-            })
+            self.artifacts.append(
+                {
+                    "id": artifact_id,
+                    "title": f"Artifact: {p_clean[:40]}",
+                    "type": "html_app" if is_app else "python_script",
+                    "language": "html" if is_app else "python",
+                    "code": report.final_code,
+                    "created_at": time.time(),
+                    "status": report.status,
+                }
+            )
 
             result = {
                 "type": "code_execution",
@@ -424,7 +512,10 @@ class ChatSessionManager:
                 "effective_tokens": getattr(report, "effective_tokens", 100_000_000),
                 "total_tokens_used": getattr(report, "total_tokens_used", 1200),
                 "implementation_plan": getattr(report, "implementation_plan", None),
-                "progress_log": [e.to_dict() if hasattr(e, "to_dict") else e for e in getattr(report, "progress_log", [])],
+                "progress_log": [
+                    e.to_dict() if hasattr(e, "to_dict") else e
+                    for e in getattr(report, "progress_log", [])
+                ],
             }
 
         else:
@@ -432,7 +523,7 @@ class ChatSessionManager:
             pondering = self.operator.pondering.evaluate_multi_angle(p_clean)
             topology = self.operator.nas.search_optimal_topology(p_clean)
             subqs = self.operator.decomposer.decompose(p_clean)
-            
+
             # Build conversation context (last 6 turns)
             context_str = ""
             context_history = self._build_context(6)
@@ -478,14 +569,23 @@ class ChatSessionManager:
                 "summary": pondering.synthesis_summary,
                 "subquestions": [sq.question for sq in subqs],
                 "qualified_properties": [
-                    {"name": "TypeSafe Jev Fast Classifier", "confidence": jev_report.intent.confidence, "hypothesis": f"Intent: {jev_report.intent.value.value} (Classification: {jev_report.total_pipeline_latency_ms:.1f}ms)"}
-                ] + [
-                    {"name": p.name, "confidence": round(p.confidence, 4), "hypothesis": p.hypothesis}
+                    {
+                        "name": "TypeSafe Jev Fast Classifier",
+                        "confidence": jev_report.intent.confidence,
+                        "hypothesis": f"Intent: {jev_report.intent.value.value} (Classification: {jev_report.total_pipeline_latency_ms:.1f}ms)",
+                    }
+                ]
+                + [
+                    {
+                        "name": p.name,
+                        "confidence": round(p.confidence, 4),
+                        "hypothesis": p.hypothesis,
+                    }
                     for p in pondering.qualified_properties
                 ],
                 "holographic_stats": self.operator.holographic_mem.get_boundary_compression_stats(),
                 "effective_tokens": 100_000_000,
-                "total_tokens_used": getattr(llm_resp, 'total_tokens', 800),
+                "total_tokens_used": getattr(llm_resp, "total_tokens", 800),
             }
 
             result = {
@@ -501,7 +601,7 @@ class ChatSessionManager:
                 "model": self.operator.llm.model_name,
                 "elapsed_seconds": round(time.perf_counter() - t0, 2),
                 "effective_tokens": 100_000_000,
-                "total_tokens_used": getattr(llm_resp, 'total_tokens', 800),
+                "total_tokens_used": getattr(llm_resp, "total_tokens", 800),
             }
 
         self.history.append({"prompt": p_clean, "result": result})
@@ -518,10 +618,10 @@ class ChatSessionManager:
             return
         if not self.current_chat_id:
             self.current_chat_id = f"chat-{uuid.uuid4().hex[:8]}"
-        
+
         first_prompt = self.history[0].get("prompt", "Untitled Session")
         title = (first_prompt[:40] + "...") if len(first_prompt) > 40 else first_prompt
-        
+
         self.saved_chats[self.current_chat_id] = {
             "id": self.current_chat_id,
             "title": title,
@@ -580,19 +680,23 @@ class ChatSessionManager:
         for t in tools_data:
             params: List[MCPToolParameter] = []
             for p in t.get("parameters", []):
-                params.append(MCPToolParameter(
-                    name=p.get("name", "arg"),
-                    param_type=p.get("param_type", "string"),
-                    description=p.get("description", ""),
-                    required=p.get("required", True),
-                    default=p.get("default", None),
-                ))
-            tools.append(MCPToolDefinition(
-                name=t.get("name", "my_tool"),
-                description=t.get("description", "A custom MCP tool"),
-                parameters=params,
-                handler_code=t.get("handler_code", ""),
-            ))
+                params.append(
+                    MCPToolParameter(
+                        name=p.get("name", "arg"),
+                        param_type=p.get("param_type", "string"),
+                        description=p.get("description", ""),
+                        required=p.get("required", True),
+                        default=p.get("default", None),
+                    )
+                )
+            tools.append(
+                MCPToolDefinition(
+                    name=t.get("name", "my_tool"),
+                    description=t.get("description", "A custom MCP tool"),
+                    parameters=params,
+                    handler_code=t.get("handler_code", ""),
+                )
+            )
 
         sdef = MCPServerDefinition(
             server_name=sname,
@@ -604,15 +708,17 @@ class ChatSessionManager:
         cfg_json = MCPServerScaffolder.generate_claude_desktop_config(sdef)
 
         # Store as artifact
-        self.artifacts.append({
-            "id": f"art-mcp-{sname}",
-            "title": f"MCP Server: {sname}",
-            "type": "mcp_server",
-            "language": "python",
-            "code": py_code,
-            "created_at": time.time(),
-            "status": "ready",
-        })
+        self.artifacts.append(
+            {
+                "id": f"art-mcp-{sname}",
+                "title": f"MCP Server: {sname}",
+                "type": "mcp_server",
+                "language": "python",
+                "code": py_code,
+                "created_at": time.time(),
+                "status": "ready",
+            }
+        )
 
         return {
             "status": "success",
@@ -628,12 +734,14 @@ class ChatSessionManager:
 
         params: List[MCPToolParameter] = []
         for p in tool_data.get("parameters", []):
-            params.append(MCPToolParameter(
-                name=p.get("name", "arg"),
-                param_type=p.get("param_type", "string"),
-                description=p.get("description", ""),
-                required=p.get("required", True),
-            ))
+            params.append(
+                MCPToolParameter(
+                    name=p.get("name", "arg"),
+                    param_type=p.get("param_type", "string"),
+                    description=p.get("description", ""),
+                    required=p.get("required", True),
+                )
+            )
 
         tool = MCPToolDefinition(
             name=tool_data.get("name", "test_tool"),
@@ -678,12 +786,14 @@ class ChatSessionManager:
         """Returns list of recent chats metadata."""
         items = []
         for cid, cdata in self.saved_chats.items():
-            items.append({
-                "id": cid,
-                "title": cdata.get("title", "Untitled Chat"),
-                "updated_at": cdata.get("updated_at", time.time()),
-                "turn_count": len(cdata.get("turns", [])),
-            })
+            items.append(
+                {
+                    "id": cid,
+                    "title": cdata.get("title", "Untitled Chat"),
+                    "updated_at": cdata.get("updated_at", time.time()),
+                    "turn_count": len(cdata.get("turns", [])),
+                }
+            )
         items.sort(key=lambda x: x["updated_at"], reverse=True)
         return items
 
@@ -694,7 +804,9 @@ class ChatSessionManager:
     def save_chat(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         """Saves or updates a chat session."""
         chat_id = payload.get("id") or f"chat-{uuid.uuid4().hex[:8]}"
-        title = payload.get("title") or (self.history[0]["prompt"][:35] if self.history else "New Chat")
+        title = payload.get("title") or (
+            self.history[0]["prompt"][:35] if self.history else "New Chat"
+        )
         turns = payload.get("turns") or self.history
 
         self.saved_chats[chat_id] = {
@@ -732,6 +844,7 @@ class ChatSessionManager:
         Returns provider info, response time, and detailed status.
         """
         import time as _time
+
         t0 = _time.perf_counter()
 
         provider = self.operator.llm.provider_name
@@ -768,7 +881,11 @@ class ChatSessionManager:
         except Exception as e:
             latency_ms = round((_time.perf_counter() - t0) * 1000, 1)
             err_str = str(e)
-            if "401" in err_str or "Unauthorized" in err_str or "invalid_api_key" in err_str.lower():
+            if (
+                "401" in err_str
+                or "Unauthorized" in err_str
+                or "invalid_api_key" in err_str.lower()
+            ):
                 msg = f"❌ Invalid API Key for {provider.upper()}. Check your key in Settings."
             elif "timeout" in err_str.lower() or "Connection" in err_str:
                 msg = f"❌ Cannot reach {provider.upper()} server. Check your endpoint or internet connection."
@@ -828,9 +945,7 @@ class ChatSessionManager:
         self.provider_name = "ollama"
         self.model_name = model_tag
 
-        kwargs: Dict[str, Any] = {
-            "host": self.custom_endpoint or "http://127.0.0.1:11434"
-        }
+        kwargs: Dict[str, Any] = {"host": self.custom_endpoint or "http://127.0.0.1:11434"}
 
         self.operator = SandboxOperatorInterface(
             provider_name=self.provider_name,
@@ -846,5 +961,3 @@ class ChatSessionManager:
             "message": f"Successfully connected to local Ollama with {model_tag}!",
             "runtime": self.get_status(),
         }
-
-

@@ -12,30 +12,25 @@ Tests cover:
 """
 
 import os
-import math
-import tempfile
-import pytest
 
-from agent_core.tools import (
-    FileReadTool,
-    FileWriteTool,
-    ShellExecuteTool,
-    PythonEvalTool,
-    ToolRegistry,
-    ToolResult,
-)
+from agent_core.agents import CoderAgent, ReviewerAgent, TesterAgent
 from agent_core.memory import (
     ConversationBuffer,
     EpisodicStore,
-    Message,
     _cosine_similarity,
 )
-from agent_core.agents import CoderAgent, TesterAgent, ReviewerAgent
-
+from agent_core.tools import (
+    FileReadTool,
+    FileWriteTool,
+    PythonEvalTool,
+    ShellExecuteTool,
+    ToolRegistry,
+)
 
 # ---------------------------------------------------------------------------
 # 1. FileReadTool
 # ---------------------------------------------------------------------------
+
 
 class TestFileReadTool:
     def test_read_existing_file(self, tmp_path):
@@ -72,6 +67,7 @@ class TestFileReadTool:
 # 2. FileWriteTool
 # ---------------------------------------------------------------------------
 
+
 class TestFileWriteTool:
     def test_write_creates_file(self, tmp_path):
         p = tmp_path / "out.txt"
@@ -95,6 +91,7 @@ class TestFileWriteTool:
 # ---------------------------------------------------------------------------
 # 3. PythonEvalTool
 # ---------------------------------------------------------------------------
+
 
 class TestPythonEvalTool:
     def test_basic_arithmetic(self):
@@ -135,6 +132,7 @@ class TestPythonEvalTool:
 # 4. ShellExecuteTool
 # ---------------------------------------------------------------------------
 
+
 class TestShellExecuteTool:
     def test_simple_echo(self):
         result = ShellExecuteTool().execute(command="echo hello")
@@ -163,6 +161,7 @@ class TestShellExecuteTool:
 # ---------------------------------------------------------------------------
 # 5. ToolRegistry
 # ---------------------------------------------------------------------------
+
 
 class TestToolRegistry:
     def test_default_registry_has_tools(self):
@@ -194,6 +193,7 @@ class TestToolRegistry:
 # ---------------------------------------------------------------------------
 # 6. ConversationBuffer
 # ---------------------------------------------------------------------------
+
 
 class TestConversationBuffer:
     def test_add_and_retrieve_messages(self):
@@ -242,6 +242,7 @@ class TestConversationBuffer:
 # ---------------------------------------------------------------------------
 # 7. EpisodicStore
 # ---------------------------------------------------------------------------
+
 
 class TestEpisodicStore:
     def test_store_and_count(self):
@@ -302,6 +303,7 @@ class TestEpisodicStore:
 # ---------------------------------------------------------------------------
 # 8. Original agent tests (correctness)
 # ---------------------------------------------------------------------------
+
 
 class TestOriginalAgents:
     def test_coder_generates_divide_code(self):

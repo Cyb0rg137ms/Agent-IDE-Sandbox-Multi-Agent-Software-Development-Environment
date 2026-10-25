@@ -5,15 +5,15 @@ Tests for SandboxOperatorInterface coupling LLMs to the execution sandbox.
 Verifies tool execution, self-repair loops, session reporting, and holographic tracing.
 """
 
-import pytest
 from agent_core.operator_interface import SandboxOperatorInterface, SandboxSessionReport
-from agent_core.llm import MockLLMProvider
 
 
 class TestSandboxOperatorInterface:
     def test_solve_task_success_loop(self):
         operator = SandboxOperatorInterface(provider_name="mock", enable_logos=True)
-        report = operator.solve_task("Write a safe division function 'divide(a, b)' that handles zero divisor inputs.")
+        report = operator.solve_task(
+            "Write a safe division function 'divide(a, b)' that handles zero divisor inputs."
+        )
 
         assert isinstance(report, SandboxSessionReport)
         assert report.status == "success"
@@ -66,3 +66,29 @@ class TestSandboxOperatorInterface:
         assert "def fibonacci" in report.final_code
         assert "return" in report.final_code
         assert "solve():" not in report.final_code
+
+
+class TestProviderErrorPath:
+    """Regression: the provider-error branch built SandboxSessionReport without its
+    required fields, so a failing LLM raised TypeError instead of returning a report."""
+
+    def _failing_operator(self):
+        operator = SandboxOperatorInterface(provider_name="mock", enable_logos=True)
+
+        def boom(*args, **kwargs):
+            raise ConnectionError("daemon down")
+
+        operator.llm.generate = boom  # type: ignore[method-assign]
+        return operator
+
+    def test_code_task_returns_error_report(self):
+        report = self._failing_operator().solve_task("Write a function add(a, b).")
+        assert report.status == "error"
+        assert "daemon down" in report.test_logs
+
+    def test_app_task_returns_error_report(self):
+        report = self._failing_operator().solve_task(
+            "Build a snake game in HTML canvas with JavaScript."
+        )
+        assert report.status == "error"
+        assert "daemon down" in report.test_logs

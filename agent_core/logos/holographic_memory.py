@@ -22,6 +22,7 @@ from typing import Any, Dict, List, Optional, Tuple
 @dataclass
 class HolographicMemoryRecord:
     """A memory trace projected onto the holographic boundary."""
+
     id: str
     content: str
     boundary_vector: List[complex]
@@ -64,7 +65,9 @@ class HolographicMemoryEngine:
             vec = [x / norm for x in vec]
         return vec
 
-    def store(self, content: str, memory_id: Optional[str] = None, **metadata: Any) -> HolographicMemoryRecord:
+    def store(
+        self, content: str, memory_id: Optional[str] = None, **metadata: Any
+    ) -> HolographicMemoryRecord:
         """
         Superimposes a new memory trace into the bulk boundary state.
         Uses holographic superposition: State_new = alpha * State_old + beta * Item
@@ -112,7 +115,16 @@ class HolographicMemoryEngine:
             scored = [
                 (
                     r,
-                    max(0.0, float(sum(q.real * r.boundary_vector[i].real + q.imag * r.boundary_vector[i].imag for i, q in enumerate(query_vec))))
+                    max(
+                        0.0,
+                        float(
+                            sum(
+                                q.real * r.boundary_vector[i].real
+                                + q.imag * r.boundary_vector[i].imag
+                                for i, q in enumerate(query_vec)
+                            )
+                        ),
+                    ),
                 )
                 for r in self._records
             ]

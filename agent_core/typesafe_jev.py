@@ -22,7 +22,7 @@ import re
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple, TypeVar, Generic
+from typing import Any, Dict, Generic, TypeVar
 
 
 class TaskIntent(str, Enum):
@@ -53,6 +53,7 @@ class JevChoice(Generic[T]):
     Type-safe Choice primitive.
     Represents selecting from a fixed categorical distribution.
     """
+
     value: T
     confidence: float
     probabilities: Dict[str, float]
@@ -74,6 +75,7 @@ class JevScore:
     Type-safe Score primitive.
     Represents a bounded scalar value (e.g. 0.0 - 10.0 or 0.0 - 1.0).
     """
+
     score: float
     min_scale: float = 0.0
     max_scale: float = 10.0
@@ -105,6 +107,7 @@ class JevNoul:
     Type-safe Noul (Boolean / Gate decision) primitive.
     Outputs mathematically verified Yes/No status with probability distribution.
     """
+
     decision: bool
     probability: float
     gate_name: str
@@ -125,6 +128,7 @@ class JevDecisionReport:
     """
     Aggregated parallel decision record from TypeSafe AI Jev execution.
     """
+
     intent: JevChoice[TaskIntent]
     code_target: JevChoice[CodeTargetType]
     complexity: JevScore
@@ -168,30 +172,85 @@ class JevDecisionEngine:
 
     # Feature keywords mapped to categorical scores
     CODING_KEYWORDS = [
-        "write", "code", "function", "implement", "def ", "class ", "fix", "solve",
-        "divide", "algorithm", "script", "program", "compile", "test", "benchmark",
-        "quicksort", "binary search", "fibonacci", "reverse", "palindrome", "prime",
-        "refactor", "unit test", "bug", "traceback", "syntax error"
+        "write",
+        "code",
+        "function",
+        "implement",
+        "def ",
+        "class ",
+        "fix",
+        "solve",
+        "divide",
+        "algorithm",
+        "script",
+        "program",
+        "compile",
+        "test",
+        "benchmark",
+        "quicksort",
+        "binary search",
+        "fibonacci",
+        "reverse",
+        "palindrome",
+        "prime",
+        "refactor",
+        "unit test",
+        "bug",
+        "traceback",
+        "syntax error",
     ]
-    
+
     MCP_KEYWORDS = [
-        "mcp", "model context protocol", "mcp server", "fastmcp", "tool definition",
-        "json-rpc", "mcp_server", "claude_desktop_config", "develop mcp", "create mcp"
+        "mcp",
+        "model context protocol",
+        "mcp server",
+        "fastmcp",
+        "tool definition",
+        "json-rpc",
+        "mcp_server",
+        "claude_desktop_config",
+        "develop mcp",
+        "create mcp",
     ]
 
     MATH_KEYWORDS = [
-        "zeta", "riemann", "higgs", "boson", "fractal", "topology", "knot theory",
-        "prime manifold", "eigenvalue", "tensor", "quantum", "spectral", "hamiltonian"
+        "zeta",
+        "riemann",
+        "higgs",
+        "boson",
+        "fractal",
+        "topology",
+        "knot theory",
+        "prime manifold",
+        "eigenvalue",
+        "tensor",
+        "quantum",
+        "spectral",
+        "hamiltonian",
     ]
 
     CANVAS_KEYWORDS = [
-        "game", "canvas", "temple run", "runner", "arcade", "play", "html5 game",
-        "animation", "interactive", "three.js", "webgl"
+        "game",
+        "canvas",
+        "temple run",
+        "runner",
+        "arcade",
+        "play",
+        "html5 game",
+        "animation",
+        "interactive",
+        "three.js",
+        "webgl",
     ]
 
     DANGEROUS_PATTERNS = [
-        r"rm\s+-rf", r"format\s+c:", r"delete\s+all", r"drop\s+database",
-        r"os\.system\(", r"subprocess\.Popen\(['\"]rm", r":(){ :|:& };:"
+        r"rm\s+-rf",
+        r"format\s+c:",
+        r"delete\s+all",
+        r"drop\s+database",
+        r"os\.system\(",
+        r"subprocess\.Popen\(['\"]rm",
+        r":(){ :|:& };:",
     ]
 
     def __init__(self) -> None:
@@ -268,17 +327,39 @@ class JevDecisionEngine:
             scores[TaskIntent.MATH_REASONING.value] += 1.2 + (math_matches * 0.5)
 
         # Check Explanations / Conceptual Questions
-        if p_lower.startswith(("explain", "what is", "what are", "why", "describe", "tell me about", "overview")):
+        if p_lower.startswith(
+            (
+                "explain",
+                "what is",
+                "what are",
+                "why",
+                "describe",
+                "tell me about",
+                "overview",
+            )
+        ):
             scores[TaskIntent.CONVERSATIONAL.value] += 2.0
             scores[TaskIntent.MATH_REASONING.value] += 0.8
             scores[TaskIntent.CODING.value] = 0.05
 
         # Check Greetings / Conversational
-        if any(p_lower.startswith(g) for g in ["hi", "hello", "hey", "who are you", "what can you do", "help"]):
+        if any(
+            p_lower.startswith(g)
+            for g in ["hi", "hello", "hey", "who are you", "what can you do", "help"]
+        ):
             scores[TaskIntent.CONVERSATIONAL.value] += 2.5
             scores[TaskIntent.CODING.value] = 0.05
 
-        if any(k in p_lower for k in ["architecture", "system design", "microservices", "pipeline", "scale"]):
+        if any(
+            k in p_lower
+            for k in [
+                "architecture",
+                "system design",
+                "microservices",
+                "pipeline",
+                "scale",
+            ]
+        ):
             scores[TaskIntent.SYSTEM_DESIGN.value] += 1.0
 
         if any(k in p_lower for k in ["vulnerability", "audit", "cve", "penetration", "exploit"]):
@@ -311,14 +392,19 @@ class JevDecisionEngine:
 
         if any(k in p_lower for k in self.CANVAS_KEYWORDS):
             scores[CodeTargetType.HTML5_APP.value] = 2.5
-        elif intent in [TaskIntent.CONVERSATIONAL, TaskIntent.MATH_REASONING] and not any(k in p_lower for k in ["write", "implement", "def ", "class "]):
+        elif intent in [
+            TaskIntent.CONVERSATIONAL,
+            TaskIntent.MATH_REASONING,
+        ] and not any(k in p_lower for k in ["write", "implement", "def ", "class "]):
             scores[CodeTargetType.NONE.value] = 0.95
         elif intent == TaskIntent.MCP_DEV:
             scores[CodeTargetType.MCP_SERVER.value] = 1.8
         elif intent == TaskIntent.CODING:
             if any(k in p_lower for k in ["test", "assert", "pytest", "spec"]):
                 scores[CodeTargetType.TEST_SUITE.value] = 1.2
-            elif any(k in p_lower for k in ["search", "sort", "fibonacci", "algorithm", "prime", "sieve"]):
+            elif any(
+                k in p_lower for k in ["search", "sort", "fibonacci", "algorithm", "prime", "sieve"]
+            ):
                 scores[CodeTargetType.ALGORITHM.value] = 1.3
             else:
                 scores[CodeTargetType.PYTHON_SCRIPT.value] = 1.4
@@ -340,7 +426,17 @@ class JevDecisionEngine:
         token_len = len(prompt.split())
         base_score = min(9.5, 2.0 + (token_len / 15.0))
 
-        if any(k in prompt.lower() for k in ["multithread", "distributed", "compiler", "engine", "sandbox", "mera"]):
+        if any(
+            k in prompt.lower()
+            for k in [
+                "multithread",
+                "distributed",
+                "compiler",
+                "engine",
+                "sandbox",
+                "mera",
+            ]
+        ):
             base_score = min(10.0, base_score + 2.5)
 
         latency_ms = (time.perf_counter() - t0) * 1000.0
@@ -388,7 +484,9 @@ class JevDecisionEngine:
 
     def _evaluate_noul_blueprint(self, complexity: float, p_lower: str) -> JevNoul:
         t0 = time.perf_counter()
-        req = complexity >= 5.0 or any(k in p_lower for k in ["architecture", "subsystem", "module", "pipeline"])
+        req = complexity >= 5.0 or any(
+            k in p_lower for k in ["architecture", "subsystem", "module", "pipeline"]
+        )
         return JevNoul(
             gate_name="requires_blueprint",
             decision=req,

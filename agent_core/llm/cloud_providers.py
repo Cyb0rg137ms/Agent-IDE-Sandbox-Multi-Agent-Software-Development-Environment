@@ -17,6 +17,7 @@ import os
 import urllib.error
 import urllib.request
 from typing import Any, Dict, List, Optional
+
 from agent_core.llm.base import BaseLLMProvider, LLMResponse
 
 
@@ -36,7 +37,9 @@ class OpenAICompatibleProvider(BaseLLMProvider):
     ) -> None:
         super().__init__(model_name, **kwargs)
         self.api_key = api_key or os.getenv("OPENAI_API_KEY", "")
-        self.base_url = (base_url or os.getenv("OPENAI_BASE_URL", self.DEFAULT_BASE_URL)).rstrip("/")
+        self.base_url = (base_url or os.getenv("OPENAI_BASE_URL", self.DEFAULT_BASE_URL)).rstrip(
+            "/"
+        )
         self.timeout = timeout
         self._provider_name = provider_name_override or "openai"
 
@@ -280,7 +283,12 @@ class GeminiProvider(BaseLLMProvider):
         url = f"{self.base_url}/models/{self.model_name}:generateContent?key={self.api_key}"
         contents = []
         if system_prompt:
-            contents.append({"role": "user", "parts": [{"text": f"System Instructions: {system_prompt}"}]})
+            contents.append(
+                {
+                    "role": "user",
+                    "parts": [{"text": f"System Instructions: {system_prompt}"}],
+                }
+            )
             contents.append({"role": "model", "parts": [{"text": "Understood."}]})
         contents.append({"role": "user", "parts": [{"text": prompt}]})
 
@@ -334,5 +342,10 @@ class GeminiProvider(BaseLLMProvider):
             else:
                 user_parts.append(f"{m.get('role').upper()}: {m.get('content')}")
         full_prompt = "\n\n".join(user_parts)
-        return self.generate(full_prompt, system_prompt=system or None, temperature=temperature, max_tokens=max_tokens, **kwargs)
-
+        return self.generate(
+            full_prompt,
+            system_prompt=system or None,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            **kwargs,
+        )
