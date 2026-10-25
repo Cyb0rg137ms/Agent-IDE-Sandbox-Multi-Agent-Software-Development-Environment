@@ -4,8 +4,7 @@ test_recursive_auditor.py
 Tests for RigorousAuditor and recursive fixed-point convergence (OO_{k+1} == OO_k).
 """
 
-import pytest
-from agent_core.logos.recursive_auditor import RigorousAuditor, AuditReport
+from agent_core.logos.recursive_auditor import AuditReport, RigorousAuditor
 from agent_core.operator_interface import SandboxOperatorInterface, SandboxSessionReport
 
 
@@ -35,11 +34,15 @@ class TestRigorousAuditor:
     def test_game_audit_checks(self):
         auditor = RigorousAuditor()
         # Incomplete game code missing requestAnimationFrame
-        incomplete_game = "<html><body><canvas id='c'></canvas><script>let x = 1;</script></body></html>"
+        incomplete_game = (
+            "<html><body><canvas id='c'></canvas><script>let x = 1;</script></body></html>"
+        )
         report = auditor.audit(incomplete_game, "build a game")
 
         assert report.is_converged is False
-        assert any("animation" in iss.lower() or "loop" in iss.lower() for iss in report.detected_issues)
+        assert any(
+            "animation" in iss.lower() or "loop" in iss.lower() for iss in report.detected_issues
+        )
 
     def test_recursive_operator_convergence(self):
         operator = SandboxOperatorInterface(provider_name="mock", enable_logos=True)
@@ -58,4 +61,3 @@ class TestRigorousAuditor:
         assert data["fixed_point_reached"] is True
         assert len(data["audit_history"]) == 2
         assert "def divide" in report.final_code
-

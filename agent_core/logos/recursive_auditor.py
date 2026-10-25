@@ -12,15 +12,16 @@ Flags concrete bugs and formulates modular refinement directives.
 from __future__ import annotations
 
 import ast
-import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
+
 from agent_core.llm.base import BaseLLMProvider
 
 
 @dataclass
 class AuditReport:
     """Detailed critique of an output artifact OO_k."""
+
     iteration: int
     score: float
     is_converged: bool
@@ -86,17 +87,28 @@ class RigorousAuditor:
             # Check for zero division guard
             has_zero_guard = any(
                 pattern in code_clean
-                for pattern in ["b == 0", "b == 0.0", "b <= 0 and b >= 0", "not b", "== 0"]
+                for pattern in [
+                    "b == 0",
+                    "b == 0.0",
+                    "b <= 0 and b >= 0",
+                    "not b",
+                    "== 0",
+                ]
             )
             if not has_zero_guard:
-                detected_issues.append("Missing zero-divisor singularity preemption guard (b == 0).")
+                detected_issues.append(
+                    "Missing zero-divisor singularity preemption guard (b == 0)."
+                )
             else:
-                passed_invariants.append("Zero-divisor singularity preemption verified (b == 0 handled).")
+                passed_invariants.append(
+                    "Zero-divisor singularity preemption verified (b == 0 handled)."
+                )
 
-        if "element" in task_lower and ("arr" in task_lower or "list" in task_lower or "idx" in task_lower):
+        if "element" in task_lower and (
+            "arr" in task_lower or "list" in task_lower or "idx" in task_lower
+        ):
             has_bounds_guard = any(
-                pattern in code_clean
-                for pattern in ["len(arr)", "len(list)", "idx < 0", "idx >="]
+                pattern in code_clean for pattern in ["len(arr)", "len(list)", "idx < 0", "idx >="]
             )
             if not has_bounds_guard:
                 detected_issues.append("Missing array index out-of-bounds guard checking len(arr).")
@@ -105,12 +117,16 @@ class RigorousAuditor:
 
         if any(g in task_lower for g in ["game", "temple run", "canvas", "flappy"]):
             if "requestanimationframe" not in code_lower and "setinterval" not in code_lower:
-                detected_issues.append("Interactive game is missing an active animation/render loop (requestAnimationFrame).")
+                detected_issues.append(
+                    "Interactive game is missing an active animation/render loop (requestAnimationFrame)."
+                )
             else:
                 passed_invariants.append("Real-time game loop verified via requestAnimationFrame.")
 
             if "addeventlistener" not in code_lower and "onkeydown" not in code_lower:
-                detected_issues.append("Game is missing user input event listeners (keyboard or touch).")
+                detected_issues.append(
+                    "Game is missing user input event listeners (keyboard or touch)."
+                )
             else:
                 passed_invariants.append("Player input controls and event dispatchers verified.")
 
@@ -118,19 +134,27 @@ class RigorousAuditor:
         forbidden = ["os.system", "subprocess.call", "shutil.rmtree", "eval("]
         for bad in forbidden:
             if bad in code_clean:
-                detected_issues.append(f"Security boundary violation: forbidden call '{bad}' detected.")
+                detected_issues.append(
+                    f"Security boundary violation: forbidden call '{bad}' detected."
+                )
 
         if not any(bad in code_clean for bad in forbidden):
-            passed_invariants.append("Security boundary intact: zero malicious or unconstrained subshell calls.")
+            passed_invariants.append(
+                "Security boundary intact: zero malicious or unconstrained subshell calls."
+            )
 
         # 4. Determine Convergence
-        is_converged = (len(detected_issues) == 0)
+        is_converged = len(detected_issues) == 0
         score = 10.0 if is_converged else max(5.0, 10.0 - (len(detected_issues) * 1.5))
 
         if is_converged:
-            refinement_strategy = "Output verified defect-free: formal invariants satisfied. Fixed-point reached."
+            refinement_strategy = (
+                "Output verified defect-free: formal invariants satisfied. Fixed-point reached."
+            )
         else:
-            refinement_strategy = f"Address {len(detected_issues)} identified flaws via targeted component repair."
+            refinement_strategy = (
+                f"Address {len(detected_issues)} identified flaws via targeted component repair."
+            )
 
         return AuditReport(
             iteration=iteration,

@@ -10,6 +10,7 @@ Unit tests for ChatSessionManager extended features:
 """
 
 import pytest
+
 from server.handlers import ChatSessionManager
 
 
@@ -30,7 +31,9 @@ class TestChatSessionManagerExtended:
         assert res["jev"]["intent"]["value"] == "CONVERSATIONAL"
 
     def test_zeta_function_physics_query(self, manager):
-        res = manager.process_chat("Explain the Zeta function and spectral physics Hilbert-Pólya conjecture")
+        res = manager.process_chat(
+            "Explain the Zeta function and spectral physics Hilbert-Pólya conjecture"
+        )
         assert res["type"] == "conversational"
         assert "Hilbert-Pólya" in res["content"] or "Riemann" in res["content"]
         assert "Hamiltonian" in res["content"] or "GUE" in res["content"]
@@ -50,11 +53,18 @@ class TestChatSessionManagerExtended:
         assert len(chats) >= 0
 
         # Save a new chat
-        save_res = manager.save_chat({
-            "id": "chat-new-test",
-            "title": "Quantum Error Correction",
-            "turns": [{"prompt": "Design surface code lattice", "result": {"content": "Verified"}}]
-        })
+        save_res = manager.save_chat(
+            {
+                "id": "chat-new-test",
+                "title": "Quantum Error Correction",
+                "turns": [
+                    {
+                        "prompt": "Design surface code lattice",
+                        "result": {"content": "Verified"},
+                    }
+                ],
+            }
+        )
         assert save_res["status"] == "saved"
         assert manager.load_chat("chat-new-test")["title"] == "Quantum Error Correction"
 
@@ -67,10 +77,12 @@ class TestChatSessionManagerExtended:
         assert len(projs) >= 0
 
         # Create new project
-        new_proj = manager.create_project({
-            "title": "Superconductor Design Engine",
-            "description": "High-Tc cuprate critical temperature predictor"
-        })
+        new_proj = manager.create_project(
+            {
+                "title": "Superconductor Design Engine",
+                "description": "High-Tc cuprate critical temperature predictor",
+            }
+        )
         assert new_proj["title"] == "Superconductor Design Engine"
         assert manager.get_projects()[0]["title"] == "Superconductor Design Engine"
 
@@ -81,7 +93,9 @@ class TestChatSessionManagerExtended:
         assert any("Temple Run" in t for t in titles)
 
         # Running a coding task adds an artifact
-        manager.process_chat("Write a safe division function 'divide(a, b)' that handles zero divisor.")
+        manager.process_chat(
+            "Write a safe division function 'divide(a, b)' that handles zero divisor."
+        )
         updated_arts = manager.get_artifacts()
         assert len(updated_arts) >= 3
 
@@ -96,29 +110,41 @@ class TestChatSessionManagerExtended:
         presets = manager.get_mcp_presets()
         assert len(presets) >= 3
 
-        gen_res = manager.generate_mcp_server({
-            "server_name": "test-calc",
-            "description": "Calculator MCP",
-            "tools": [{
-                "name": "add",
-                "description": "Add 2 numbers",
-                "parameters": [{"name": "a", "param_type": "number"}, {"name": "b", "param_type": "number"}],
-                "handler_code": "return json.dumps({'res': kwargs.get('a', 0) + kwargs.get('b', 0)})"
-            }]
-        })
+        gen_res = manager.generate_mcp_server(
+            {
+                "server_name": "test-calc",
+                "description": "Calculator MCP",
+                "tools": [
+                    {
+                        "name": "add",
+                        "description": "Add 2 numbers",
+                        "parameters": [
+                            {"name": "a", "param_type": "number"},
+                            {"name": "b", "param_type": "number"},
+                        ],
+                        "handler_code": "return json.dumps({'res': kwargs.get('a', 0) + kwargs.get('b', 0)})",
+                    }
+                ],
+            }
+        )
         assert gen_res["status"] == "success"
         assert "from mcp.server.fastmcp import FastMCP" in gen_res["python_code"]
         assert "claude_desktop_config" in gen_res
 
         # Test tool
-        test_res = manager.test_mcp_tool({
-            "tool": {
-                "name": "add",
-                "description": "Add 2 numbers",
-                "parameters": [{"name": "a", "param_type": "number"}, {"name": "b", "param_type": "number"}],
-                "handler_code": "return json.dumps({'res': kwargs.get('a', 0) + kwargs.get('b', 0)})"
-            },
-            "arguments": {"a": 10, "b": 25}
-        })
+        test_res = manager.test_mcp_tool(
+            {
+                "tool": {
+                    "name": "add",
+                    "description": "Add 2 numbers",
+                    "parameters": [
+                        {"name": "a", "param_type": "number"},
+                        {"name": "b", "param_type": "number"},
+                    ],
+                    "handler_code": "return json.dumps({'res': kwargs.get('a', 0) + kwargs.get('b', 0)})",
+                },
+                "arguments": {"a": 10, "b": 25},
+            }
+        )
         assert test_res["status"] == "success"
         assert "35" in test_res["stdout"]

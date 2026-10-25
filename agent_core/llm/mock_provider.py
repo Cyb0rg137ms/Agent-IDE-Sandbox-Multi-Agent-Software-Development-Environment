@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import re
 from typing import Any, Dict, List, Optional
+
 from agent_core.llm.base import BaseLLMProvider, LLMResponse
 
 
@@ -50,7 +51,12 @@ class MockLLMProvider(BaseLLMProvider):
     ) -> LLMResponse:
         full_prompt = "\n".join(m.get("content", "") for m in messages)
         system = next((m.get("content", "") for m in messages if m.get("role") == "system"), "")
-        return self.generate(full_prompt, system_prompt=system, temperature=temperature, max_tokens=max_tokens)
+        return self.generate(
+            full_prompt,
+            system_prompt=system,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
 
     def _synthesize_response(self, prompt: str, system: str) -> str:
         p_lower = prompt.lower()
@@ -65,24 +71,48 @@ class MockLLMProvider(BaseLLMProvider):
                 target_task = p_lower
 
         # Check if error logs or defect refinement are provided for self-healing
-        if "error" in p_lower or "traceback" in p_lower or "zerodivisionerror" in p_lower or "indexerror" in p_lower or "defects" in p_lower or "repair" in s_lower:
-            match_fn = re.search(r'def\s+([a-zA-Z_][a-zA-Z0-9_]*)', prompt)
+        if (
+            "error" in p_lower
+            or "traceback" in p_lower
+            or "zerodivisionerror" in p_lower
+            or "indexerror" in p_lower
+            or "defects" in p_lower
+            or "repair" in s_lower
+        ):
+            match_fn = re.search(r"def\s+([a-zA-Z_][a-zA-Z0-9_]*)", prompt)
             curr_fn = match_fn.group(1).lower() if match_fn else ""
-            if "zerodivision" in p_lower or "zero-division" in p_lower or curr_fn == "divide" or ("divide" in target_task and "fibonacci" not in target_task and "search" not in target_task):
+            if (
+                "zerodivision" in p_lower
+                or "zero-division" in p_lower
+                or curr_fn == "divide"
+                or (
+                    "divide" in target_task
+                    and "fibonacci" not in target_task
+                    and "search" not in target_task
+                )
+            ):
                 return (
                     "```python\n"
                     "def divide(a, b):\n"
-                    "    \"\"\"Divide a by b safely handling zero divisor.\"\"\"\n"
+                    '    """Divide a by b safely handling zero divisor."""\n'
                     "    if b == 0:\n"
                     "        return 0\n"
                     "    return a / b\n"
                     "```"
                 )
-            if "indexerror" in p_lower or curr_fn == "get_element" or ("element" in target_task and "fibonacci" not in target_task and "search" not in target_task):
+            if (
+                "indexerror" in p_lower
+                or curr_fn == "get_element"
+                or (
+                    "element" in target_task
+                    and "fibonacci" not in target_task
+                    and "search" not in target_task
+                )
+            ):
                 return (
                     "```python\n"
                     "def get_element(arr, idx):\n"
-                    "    \"\"\"Get element at index with safe bounds checking.\"\"\"\n"
+                    '    """Get element at index with safe bounds checking."""\n'
                     "    if idx < 0 or idx >= len(arr):\n"
                     "        return None\n"
                     "    return arr[idx]\n"
@@ -95,7 +125,7 @@ class MockLLMProvider(BaseLLMProvider):
 
         # Tester role
         if "qa" in s_lower or "test" in s_lower or "generate test" in p_lower:
-            match_fn = re.search(r'def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(([^)]*)\)', prompt)
+            match_fn = re.search(r"def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(([^)]*)\)", prompt)
             if match_fn:
                 fn = match_fn.group(1)
                 args = [a.strip() for a in match_fn.group(2).split(",") if a.strip()]
@@ -204,21 +234,17 @@ class MockLLMProvider(BaseLLMProvider):
                     "print('All tests passed')\n"
                     "```"
                 )
-            return (
-                "```python\n"
-                "print('All tests passed')\n"
-                "```"
-            )
+            return "```python\nprint('All tests passed')\n```"
 
         # Reviewer role
         if "reviewer" in s_lower or "architect" in s_lower or "audit" in p_lower:
             return (
-                '{\n'
+                "{\n"
                 '  "approved": true,\n'
                 '  "security_check": "passed",\n'
                 '  "style_score": 9.5,\n'
                 '  "analysis": "Code adheres to security constraints, includes complete docstrings and boundary guards."\n'
-                '}'
+                "}"
             )
 
         # Extract the specific target task if structured prompt is used
@@ -237,17 +263,13 @@ class MockLLMProvider(BaseLLMProvider):
         # Code generation for coding tasks (initial draft - deliberately simple/buggy to demonstrate self-healing)
         if "divide" in target_task:
             return (
-                "```python\n"
-                "def divide(a, b):\n"
-                "    \"\"\"Divide two numbers.\"\"\"\n"
-                "    return a / b\n"
-                "```"
+                '```python\ndef divide(a, b):\n    """Divide two numbers."""\n    return a / b\n```'
             )
         elif "element" in target_task:
             return (
                 "```python\n"
                 "def get_element(arr, idx):\n"
-                "    \"\"\"Get element at index.\"\"\"\n"
+                '    """Get element at index."""\n'
                 "    return arr[idx]\n"
                 "```"
             )
@@ -264,7 +286,10 @@ class MockLLMProvider(BaseLLMProvider):
         p_lower = prompt.lower().strip()
 
         # Greetings & identity
-        if any(p_lower.startswith(g) for g in ["hi", "hello", "hey", "greetings", "good morning", "good evening"]):
+        if any(
+            p_lower.startswith(g)
+            for g in ["hi", "hello", "hey", "greetings", "good morning", "good evening"]
+        ):
             return (
                 "Hello! I am your **Agent-IDE Sandbox Assistant**, accelerated by the **LOGOS Ultra** "
                 "cognitive architecture and the **TypeSafe AI Jev** fast-decision pipeline.\n\n"
@@ -361,11 +386,22 @@ class MockLLMProvider(BaseLLMProvider):
             )
 
         # General inquiry fallback: return clear, structured guidance
-        coding_signals = ["write", "code", "function", "implement", "def ", "class ", "fix", "solve", "script", "program"]
+        coding_signals = [
+            "write",
+            "code",
+            "function",
+            "implement",
+            "def ",
+            "class ",
+            "fix",
+            "solve",
+            "script",
+            "program",
+        ]
         if not any(k in p_lower for k in coding_signals):
             return (
                 f"### Analysis & Response\n\n"
-                f"Regarding your query: *\"{prompt.strip()}\"*\n\n"
+                f'Regarding your query: *"{prompt.strip()}"*\n\n'
                 "In system architecture and engineering, addressing this involves decomposing the problem into "
                 "modular constraints, establishing clear boundary invariants, and validating execution pathways.\n\n"
                 "- **Invariants**: Ensure complete input sanitization, deterministic state transitions, and bounded memory overhead.\n"
@@ -405,12 +441,24 @@ class MockLLMProvider(BaseLLMProvider):
             return self._get_memory_game_html()
         if "temple" in t or ("runner" in t and "3d" in t):
             return self._get_temple_run_html()
-        if any(k in t for k in ["game", "canvas", "arcade", "play", "html5", "interactive", "simulator", "app"]):
+        if any(
+            k in t
+            for k in [
+                "game",
+                "canvas",
+                "arcade",
+                "play",
+                "html5",
+                "interactive",
+                "simulator",
+                "app",
+            ]
+        ):
             return self._get_generic_canvas_game_html(target_task)
         return None
 
     def _get_snake_game_html(self) -> str:
-        return '''<!DOCTYPE html>
+        return """<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"><title>Snake Arcade</title>
@@ -465,10 +513,10 @@ class MockLLMProvider(BaseLLMProvider):
   reset(); loop();
 </script>
 </body>
-</html>'''
+</html>"""
 
     def _get_pong_game_html(self) -> str:
-        return '''<!DOCTYPE html>
+        return """<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"><title>Retro Pong</title>
@@ -506,10 +554,10 @@ class MockLLMProvider(BaseLLMProvider):
   loop();
 </script>
 </body>
-</html>'''
+</html>"""
 
     def _get_tetris_game_html(self) -> str:
-        return '''<!DOCTYPE html>
+        return """<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"><title>HTML5 Tetris</title>
@@ -570,10 +618,10 @@ class MockLLMProvider(BaseLLMProvider):
   loop();
 </script>
 </body>
-</html>'''
+</html>"""
 
     def _get_tictactoe_game_html(self) -> str:
-        return '''<!DOCTYPE html>
+        return """<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"><title>Tic-Tac-Toe AI</title>
@@ -629,10 +677,10 @@ class MockLLMProvider(BaseLLMProvider):
   reset();
 </script>
 </body>
-</html>'''
+</html>"""
 
     def _get_flappy_bird_html(self) -> str:
-        return '''<!DOCTYPE html>
+        return """<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"><title>Flappy Bird HTML5</title>
@@ -688,10 +736,10 @@ class MockLLMProvider(BaseLLMProvider):
   loop();
 </script>
 </body>
-</html>'''
+</html>"""
 
     def _get_space_invaders_html(self) -> str:
-        return '''<!DOCTYPE html>
+        return """<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"><title>Space Invaders Arcade</title>
@@ -741,10 +789,10 @@ class MockLLMProvider(BaseLLMProvider):
   loop();
 </script>
 </body>
-</html>'''
+</html>"""
 
     def _get_breakout_html(self) -> str:
-        return '''<!DOCTYPE html>
+        return """<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"><title>Breakout / Arkanoid</title>
@@ -782,10 +830,10 @@ class MockLLMProvider(BaseLLMProvider):
   loop();
 </script>
 </body>
-</html>'''
+</html>"""
 
     def _get_calculator_html(self) -> str:
-        return '''<!DOCTYPE html>
+        return """<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"><title>Modern Glassmorphic Calculator</title>
@@ -820,10 +868,10 @@ class MockLLMProvider(BaseLLMProvider):
   function calc() { try { scr.value = Function('"use strict";return (' + scr.value + ')')(); } catch(e) { scr.value = 'Error'; } }
 </script>
 </body>
-</html>'''
+</html>"""
 
     def _get_todo_app_html(self) -> str:
-        return '''<!DOCTYPE html>
+        return """<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"><title>Modern Task Manager</title>
@@ -865,11 +913,11 @@ class MockLLMProvider(BaseLLMProvider):
   render();
 </script>
 </body>
-</html>'''
+</html>"""
 
     def _get_generic_canvas_game_html(self, target_task: str) -> str:
-        safe_title = re.sub(r'[^a-zA-Z0-9 ]', '', target_task)[:30] or "Interactive Game"
-        return f'''<!DOCTYPE html>
+        safe_title = re.sub(r"[^a-zA-Z0-9 ]", "", target_task)[:30] or "Interactive Game"
+        return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"><title>{safe_title}</title>
@@ -907,7 +955,7 @@ class MockLLMProvider(BaseLLMProvider):
   loop();
 </script>
 </body>
-</html>'''
+</html>"""
 
     def _synthesize_python_code(self, prompt: str) -> str:
         """Synthesizes valid, verified Python functions for general prompts."""
@@ -916,7 +964,7 @@ class MockLLMProvider(BaseLLMProvider):
             return (
                 "```python\n"
                 "def fibonacci(n: int) -> int:\n"
-                "    \"\"\"Compute the nth Fibonacci number efficiently with boundary guards.\"\"\"\n"
+                '    """Compute the nth Fibonacci number efficiently with boundary guards."""\n'
                 "    if not isinstance(n, int) or n <= 0:\n"
                 "        return 0\n"
                 "    if n == 1:\n"
@@ -931,7 +979,7 @@ class MockLLMProvider(BaseLLMProvider):
             return (
                 "```python\n"
                 "def binary_search(arr, target):\n"
-                "    \"\"\"Binary search on a sorted sequence.\"\"\"\n"
+                '    """Binary search on a sorted sequence."""\n'
                 "    if not arr:\n"
                 "        return -1\n"
                 "    low, high = 0, len(arr) - 1\n"
@@ -950,7 +998,7 @@ class MockLLMProvider(BaseLLMProvider):
             return (
                 "```python\n"
                 "def reverse_string(s: str) -> str:\n"
-                "    \"\"\"Reverse input string with type validation.\"\"\"\n"
+                '    """Reverse input string with type validation."""\n'
                 "    if not isinstance(s, str):\n"
                 "        return ''\n"
                 "    return s[::-1]\n"
@@ -960,7 +1008,7 @@ class MockLLMProvider(BaseLLMProvider):
             return (
                 "```python\n"
                 "def is_palindrome(s: str) -> bool:\n"
-                "    \"\"\"Check if string is a palindrome ignoring non-alphanumerics.\"\"\"\n"
+                '    """Check if string is a palindrome ignoring non-alphanumerics."""\n'
                 "    if not isinstance(s, str):\n"
                 "        return False\n"
                 "    cleaned = ''.join(c.lower() for c in s if c.isalnum())\n"
@@ -971,7 +1019,7 @@ class MockLLMProvider(BaseLLMProvider):
             return (
                 "```python\n"
                 "def is_prime(n: int) -> bool:\n"
-                "    \"\"\"Determine primality with domain boundary guards.\"\"\"\n"
+                '    """Determine primality with domain boundary guards."""\n'
                 "    if not isinstance(n, int) or n < 2:\n"
                 "        return False\n"
                 "    for i in range(2, int(n**0.5) + 1):\n"
@@ -984,7 +1032,7 @@ class MockLLMProvider(BaseLLMProvider):
             return (
                 "```python\n"
                 "def quicksort(arr):\n"
-                "    \"\"\"Quicksort algorithm with array bounds validation.\"\"\"\n"
+                '    """Quicksort algorithm with array bounds validation."""\n'
                 "    if not arr or len(arr) <= 1:\n"
                 "        return arr or []\n"
                 "    pivot = arr[len(arr) // 2]\n"
@@ -999,7 +1047,7 @@ class MockLLMProvider(BaseLLMProvider):
             return (
                 "```python\n"
                 "def factorial(n: int) -> int:\n"
-                "    \"\"\"Compute factorial with boundary and domain invariance.\"\"\"\n"
+                '    """Compute factorial with boundary and domain invariance."""\n'
                 "    if not isinstance(n, int) or n < 0:\n"
                 "        raise ValueError('Factorial input must be non-negative integer.')\n"
                 "    if n <= 1:\n"
@@ -1014,7 +1062,7 @@ class MockLLMProvider(BaseLLMProvider):
             return (
                 "```python\n"
                 "def matrix_multiply(A, B):\n"
-                "    \"\"\"Multiply two 2D matrices asserting dimension invariants.\"\"\"\n"
+                '    """Multiply two 2D matrices asserting dimension invariants."""\n'
                 "    if not A or not B or not A[0] or not B[0]:\n"
                 "        return []\n"
                 "    if len(A[0]) != len(B):\n"
@@ -1029,15 +1077,29 @@ class MockLLMProvider(BaseLLMProvider):
                 "```"
             )
 
-        match = re.search(r'(?:def|function|implement|write(?:\s+a)?)\s+([a-zA-Z_][a-zA-Z0-9_]*)', prompt, re.IGNORECASE)
+        match = re.search(
+            r"(?:def|function|implement|write(?:\s+a)?)\s+([a-zA-Z_][a-zA-Z0-9_]*)",
+            prompt,
+            re.IGNORECASE,
+        )
         fn_name = match.group(1) if match else "solve"
-        if fn_name.lower() in ["code", "program", "function", "script", "solution", "the", "a", "an", "for"]:
+        if fn_name.lower() in [
+            "code",
+            "program",
+            "function",
+            "script",
+            "solution",
+            "the",
+            "a",
+            "an",
+            "for",
+        ]:
             fn_name = "solve"
 
         return (
             "```python\n"
             f"def {fn_name}(*args, **kwargs):\n"
-            f"    \"\"\"Synthesized invariant-verified solution for: {prompt[:60]}...\"\"\"\n"
+            f'    """Synthesized invariant-verified solution for: {prompt[:60]}..."""\n'
             "    if not args and not kwargs:\n"
             "        return 'Verified Result'\n"
             "    if args:\n"
@@ -1054,8 +1116,11 @@ class MockLLMProvider(BaseLLMProvider):
 
     def _get_generic_canvas_game_html(self, target_task: str) -> str:
         """Returns a complete, self-contained, responsive HTML5 Arcade canvas game for any generic prompt."""
-        clean_title = target_task.replace('"', '').replace("'", '').strip()[:40].title() or "Neon Arcade Sandbox"
-        return f'''<!DOCTYPE html>
+        clean_title = (
+            target_task.replace('"', "").replace("'", "").strip()[:40].title()
+            or "Neon Arcade Sandbox"
+        )
+        return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"><title>{clean_title}</title>
@@ -1240,11 +1305,11 @@ class MockLLMProvider(BaseLLMProvider):
   requestAnimationFrame(loop);
 </script>
 </body>
-</html>'''
+</html>"""
 
     def _get_minesweeper_html(self) -> str:
         """Returns a complete, self-contained HTML5 Minesweeper application."""
-        return '''<!DOCTYPE html>
+        return """<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"><title>Neon Minesweeper</title>
@@ -1343,11 +1408,11 @@ class MockLLMProvider(BaseLLMProvider):
   init();
 </script>
 </body>
-</html>'''
+</html>"""
 
     def _get_maze_game_html(self) -> str:
         """Returns a complete, self-contained HTML5 Procedural Maze game."""
-        return '''<!DOCTYPE html>
+        return """<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"><title>Neon Maze Runner</title>
@@ -1414,11 +1479,11 @@ class MockLLMProvider(BaseLLMProvider):
   gen();
 </script>
 </body>
-</html>'''
+</html>"""
 
     def _get_memory_game_html(self) -> str:
         """Returns a complete, self-contained HTML5 Card Matching Memory game."""
-        return '''<!DOCTYPE html>
+        return """<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"><title>Cyber Memory Match</title>
@@ -1478,11 +1543,11 @@ class MockLLMProvider(BaseLLMProvider):
   init();
 </script>
 </body>
-</html>'''
+</html>"""
 
     def _get_temple_run_html(self) -> str:
         """Returns a complete, self-contained, 3D perspective HTML5 Temple Run game."""
-        return '''<!DOCTYPE html>
+        return """<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -2124,7 +2189,7 @@ class MockLLMProvider(BaseLLMProvider):
 })();
 </script>
 </body>
-</html>'''
+</html>"""
 
 
 # Backward compatibility alias

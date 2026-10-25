@@ -12,6 +12,7 @@ import json
 import urllib.error
 import urllib.request
 from typing import Any, Dict, List, Optional, Tuple
+
 from agent_core.llm.base import BaseLLMProvider, LLMResponse
 
 
@@ -37,24 +38,33 @@ class OllamaProvider(BaseLLMProvider):
     def provider_name(self) -> str:
         return "ollama"
 
-    _cached_availability: Optional[Tuple[bool, float]] = None
+    # Availability probes are cached for 3 s *per host* (shared across instances so the
+    # dashboard does not hammer the daemon). Previously a single class-wide slot was used,
+    # so a result for one host leaked to every other host.
+    _availability_cache: Dict[str, Tuple[bool, float]] = {}
+
+    @classmethod
+    def clear_availability_cache(cls) -> None:
+        cls._availability_cache.clear()
 
     def is_available(self) -> bool:
         """Verifies whether the Ollama server is running locally (fast non-blocking check)."""
         import time
+
         now = time.time()
-        if self._cached_availability and (now - self._cached_availability[1]) < 3.0:
-            return self._cached_availability[0]
+        cached = OllamaProvider._availability_cache.get(self.host)
+        if cached and (now - cached[1]) < 3.0:
+            return cached[0]
 
         available = False
         try:
             req = urllib.request.Request(f"{self.host}/api/version", method="GET")
             with urllib.request.urlopen(req, timeout=2.0) as resp:
-                available = (resp.status == 200)
+                available = resp.status == 200
         except Exception:
             available = False
 
-        OllamaProvider._cached_availability = (available, now)
+        OllamaProvider._availability_cache[self.host] = (available, now)
         return available
 
     def list_local_models(self) -> List[str]:
@@ -219,6 +229,4 @@ class OllamaProvider(BaseLLMProvider):
                 finish_reason="stop" if res_json.get("done") else None,
             )
         except urllib.error.URLError as e:
-            raise ConnectionError(
-                f"Failed to connect to local Ollama daemon at {self.host}: {e}"
-            )
+            raise ConnectionError(f"Failed to connect to local Ollama daemon at {self.host}: {e}")

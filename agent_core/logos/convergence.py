@@ -13,13 +13,14 @@ and synthesizes the unified solution architecture.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Any, Dict, List
 
 
 @dataclass
 class FrameworkAnalysisResult:
     """Output of an individual framework evaluation."""
+
     framework_name: str
     paradigm: str
     properties: List[str]
@@ -41,6 +42,7 @@ class FrameworkAnalysisResult:
 @dataclass
 class PropertyAlignmentEntry:
     """A row in the Property Alignment Matrix."""
+
     subquestion_id: str
     dimension: str
     framework_1_property: str
@@ -105,7 +107,9 @@ class DualFrameworkConvergenceEngine:
         complexity = "Ultrametric tree depth = 1, Zero information leakage"
 
         if "divide" in t_low or "division" in t_low:
-            props.append("Zero divisor forms a singular boundary attractor: map to neutral element (0).")
+            props.append(
+                "Zero divisor forms a singular boundary attractor: map to neutral element (0)."
+            )
         elif "element" in t_low or "index" in t_low:
             props.append("Coordinate projection outside manifold returns null element (None).")
 
@@ -135,8 +139,12 @@ class DualFrameworkConvergenceEngine:
             PropertyAlignmentEntry(
                 subquestion_id="SQ-3",
                 dimension="Boundary Invariants",
-                framework_1_property=f1.properties[3] if len(f1.properties) > 3 else f1.properties[-1],
-                framework_2_property=f2.properties[3] if len(f2.properties) > 3 else f2.properties[-1],
+                framework_1_property=f1.properties[3]
+                if len(f1.properties) > 3
+                else f1.properties[-1],
+                framework_2_property=f2.properties[3]
+                if len(f2.properties) > 3
+                else f2.properties[-1],
                 congruence_score=0.98,
                 synthesized_property="Explicit pre-condition gate checking bounds before operator evaluation.",
             )

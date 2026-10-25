@@ -12,15 +12,14 @@ Unit tests for Claude-Lightyear v10.0 Ultra & LOGOS cognitive modules:
   - Layer 6: PonderingEngine (Horizontal Multi-Angle & 95%+ Confidence Filtering)
 """
 
-import pytest
 from agent_core.logos import (
-    MasterIndexDecomposer,
-    DualFrameworkConvergenceEngine,
     AxiomaticEngine,
+    DualFrameworkConvergenceEngine,
+    DynamicAxiomRetriever,
     FractalReasoningEngine,
     HolographicMemoryEngine,
+    MasterIndexDecomposer,
     NASTopologyEngine,
-    DynamicAxiomRetriever,
     PonderingEngine,
     TopologyType,
 )
@@ -96,8 +95,14 @@ class TestFractalReasoningEngine:
 class TestHolographicMemoryEngine:
     def test_holographic_projection_and_recall(self):
         engine = HolographicMemoryEngine(dimension=64)
-        engine.store("Zero division guard handles denominator equal to 0.", memory_id="trace_zero")
-        engine.store("Array index bounds protection handles empty lists.", memory_id="trace_bounds")
+        engine.store(
+            "Zero division guard handles denominator equal to 0.",
+            memory_id="trace_zero",
+        )
+        engine.store(
+            "Array index bounds protection handles empty lists.",
+            memory_id="trace_bounds",
+        )
 
         recalled = engine.associative_recall("denominator zero guard", top_k=1)
         assert len(recalled) == 1
@@ -122,12 +127,16 @@ class TestNASTopologyEngine:
 
     def test_complex_task_selects_dual_framework(self):
         engine = NASTopologyEngine()
-        topology = engine.search_optimal_topology("Develop dual framework architecture with theory invariants")
+        topology = engine.search_optimal_topology(
+            "Develop dual framework architecture with theory invariants"
+        )
         assert topology.topology_type == TopologyType.DUAL_FRAMEWORK
 
     def test_search_task_selects_tree_of_thought(self):
         engine = NASTopologyEngine()
-        topology = engine.search_optimal_topology("Perform optimal search over heuristic tree space")
+        topology = engine.search_optimal_topology(
+            "Perform optimal search over heuristic tree space"
+        )
         assert topology.topology_type == TopologyType.TREE_OF_THOUGHT
 
 
@@ -167,7 +176,9 @@ class TestPonderingEngine:
 
     def test_recursive_space_reduction(self):
         engine = PonderingEngine()
-        calc = engine.compute_recursive_reduction(initial_space_bits=128, iterations=10, per_iter_reduction_pct=90.0)
+        calc = engine.compute_recursive_reduction(
+            initial_space_bits=128, iterations=10, per_iter_reduction_pct=90.0
+        )
         assert calc["iterations"] == 10
         assert calc["bits_eliminated"] > 30
         assert calc["remaining_bits"] < 128

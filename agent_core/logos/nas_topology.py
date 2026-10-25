@@ -13,19 +13,20 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 
 class TopologyType(str, Enum):
-    LINEAR_PIPELINE = "linear_pipeline"           # Coder -> Tester -> Reviewer
-    TREE_OF_THOUGHT = "tree_of_thought"           # Multi-hypothesis parallel branching
-    DUAL_FRAMEWORK = "dual_framework"             # Classical vs Theory 2 Convergence
-    RECURSIVE_REFINEMENT = "recursive_refinement" # Successive space-reduction loop
+    LINEAR_PIPELINE = "linear_pipeline"  # Coder -> Tester -> Reviewer
+    TREE_OF_THOUGHT = "tree_of_thought"  # Multi-hypothesis parallel branching
+    DUAL_FRAMEWORK = "dual_framework"  # Classical vs Theory 2 Convergence
+    RECURSIVE_REFINEMENT = "recursive_refinement"  # Successive space-reduction loop
 
 
 @dataclass
 class CognitiveTopology:
     """A synthesized execution topology for agent coordination."""
+
     topology_type: TopologyType
     stages: List[str]
     max_branch_factor: int = 1
@@ -54,7 +55,7 @@ class NASTopologyEngine:
     def evaluate_task_complexity(self, task_description: str) -> Dict[str, float]:
         """Calculates complexity dimensions for the task."""
         t_low = task_description.lower()
-        
+
         # Algorithmic ambiguity
         ambiguity = 0.2
         if any(w in t_low for w in ["optimal", "efficient", "heuristic", "search", "approximate"]):

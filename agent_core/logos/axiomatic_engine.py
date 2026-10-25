@@ -12,12 +12,13 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 
 @dataclass
 class Axiom:
     """A formally defined system or domain axiom."""
+
     id: str
     category: str
     statement: str
@@ -40,6 +41,7 @@ class Axiom:
 @dataclass
 class DerivationStep:
     """A deduction step produced by the axiomatic engine."""
+
     step_num: int
     rule_applied: str
     premises: List[str]
@@ -146,14 +148,23 @@ class AxiomaticEngine:
 
         # Division by zero violation check
         if "/ 0" in prop_text or "/ b" in prop_text:
-            if "if b == 0" not in prop_text and "if b != 0" not in prop_text and "b != 0" not in prop_text and "except zerodivisionerror" not in prop_text:
+            if (
+                "if b == 0" not in prop_text
+                and "if b != 0" not in prop_text
+                and "b != 0" not in prop_text
+                and "except zerodivisionerror" not in prop_text
+            ):
                 violations.append(
                     "Violation of AX_ARITH_DIV_ZERO: Division operation performed without zero divisor guard."
                 )
 
         # Bounds violation check
         if "arr[idx]" in prop_text or "arr[i]" in prop_text:
-            if "idx < len" not in prop_text and "len(arr)" not in prop_text and "0 <=" not in prop_text:
+            if (
+                "idx < len" not in prop_text
+                and "len(arr)" not in prop_text
+                and "0 <=" not in prop_text
+            ):
                 violations.append(
                     "Violation of AX_BOUNDS_NON_NEGATIVE: Array indexing without explicit boundary checks."
                 )
@@ -161,9 +172,11 @@ class AxiomaticEngine:
         # Direct contradiction check
         for p in propositions:
             if "true" in p.lower() and "false" in p.lower() and "==" in p.lower():
-                violations.append(f"Violation of AX_LOGIC_NON_CONTRADICTION: Contradictory assertion: {p}")
+                violations.append(
+                    f"Violation of AX_LOGIC_NON_CONTRADICTION: Contradictory assertion: {p}"
+                )
 
-        consistent = (len(violations) == 0)
+        consistent = len(violations) == 0
         return consistent, violations
 
     def derive_requirements(self, task_description: str) -> List[DerivationStep]:
@@ -185,7 +198,13 @@ class AxiomaticEngine:
             )
             step_idx += 1
 
-        if "index" in t_low or "element" in t_low or "lookup" in t_low or "array" in t_low or "list" in t_low:
+        if (
+            "index" in t_low
+            or "element" in t_low
+            or "lookup" in t_low
+            or "array" in t_low
+            or "list" in t_low
+        ):
             steps.append(
                 DerivationStep(
                     step_num=step_idx,

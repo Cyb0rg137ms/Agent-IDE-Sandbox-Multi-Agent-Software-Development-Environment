@@ -9,12 +9,10 @@ from __future__ import annotations
 
 import json
 import mimetypes
-import os
-import sys
+import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Any, Dict, Optional
-import urllib.parse
+from typing import Any, Optional
 
 from server.handlers import ChatSessionManager
 
@@ -26,7 +24,7 @@ class AgentIDERequestHandler(BaseHTTPRequestHandler):
     static_dir = Path(__file__).parent.parent / "web"
     timeout = 300.0
 
-    def _send_json(self, data: Dict[str, Any], status: int = 200) -> None:
+    def _send_json(self, data: Any, status: int = 200) -> None:
         """Helper to send JSON responses."""
         payload = json.dumps(data).encode("utf-8")
         self.send_response(status)
@@ -191,7 +189,12 @@ class AgentIDERequestHandler(BaseHTTPRequestHandler):
 
             def on_progress(evt):
                 try:
-                    payload_evt = json.dumps({"type": "progress", "event": evt.to_dict() if hasattr(evt, "to_dict") else evt})
+                    payload_evt = json.dumps(
+                        {
+                            "type": "progress",
+                            "event": evt.to_dict() if hasattr(evt, "to_dict") else evt,
+                        }
+                    )
                     self.wfile.write(f"data: {payload_evt}\n\n".encode("utf-8"))
                     self.wfile.flush()
                 except Exception:
@@ -275,9 +278,10 @@ class AgentIDEServer:
 
     def start(self) -> None:
         import socket
+
         server_address = (self.host, self.port)
         self.httpd = ThreadingHTTPServer(server_address, AgentIDERequestHandler)
-        
+
         # Probe local Ollama status
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.settimeout(1.0)

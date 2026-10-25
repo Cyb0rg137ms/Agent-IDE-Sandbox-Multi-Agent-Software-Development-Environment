@@ -9,7 +9,8 @@ and real LLM execution via local Ollama GGUF or Cloud APIs.
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
+
 from agent_core.llm.base import BaseLLMProvider
 
 
@@ -63,7 +64,7 @@ class CoderAgent(BaseAgent):
             if "ZeroDivisionError" in error_logs:
                 return (
                     "def divide(a, b):\n"
-                    "    \"\"\"Divide a by b safely.\"\"\"\n"
+                    '    """Divide a by b safely."""\n'
                     "    if b == 0:\n"
                     "        return 0\n"
                     "    return a / b\n"
@@ -71,25 +72,19 @@ class CoderAgent(BaseAgent):
             elif "IndexError" in error_logs:
                 return (
                     "def get_element(arr, idx):\n"
-                    "    \"\"\"Get element at index with bounds checking.\"\"\"\n"
+                    '    """Get element at index with bounds checking."""\n'
                     "    if idx < 0 or idx >= len(arr):\n"
                     "        return None\n"
                     "    return arr[idx]\n"
                 )
             else:
-                return "def solve():\n    \"\"\"Solve task.\"\"\"\n    return 'Fixed generic error'"
+                return 'def solve():\n    """Solve task."""\n    return \'Fixed generic error\''
 
         if "divide" in task_description.lower():
-            return (
-                "def divide(a, b):\n"
-                "    \"\"\"Divide two numbers.\"\"\"\n"
-                "    return a / b\n"
-            )
+            return 'def divide(a, b):\n    """Divide two numbers."""\n    return a / b\n'
         elif "element" in task_description.lower():
             return (
-                "def get_element(arr, idx):\n"
-                "    \"\"\"Get element at index.\"\"\"\n"
-                "    return arr[idx]\n"
+                'def get_element(arr, idx):\n    """Get element at index."""\n    return arr[idx]\n'
             )
         else:
             return "def solve():\n    return 'Hello World'"
@@ -97,6 +92,7 @@ class CoderAgent(BaseAgent):
 
 class TesterAgent(BaseAgent):
     """Responsible for generating test scripts to validate code."""
+
     __test__ = False
 
     def __init__(self, llm: Optional[BaseLLMProvider] = None) -> None:
@@ -156,7 +152,7 @@ class ReviewerAgent(BaseAgent):
             try:
                 raw = resp.content
                 if "{" in raw and "}" in raw:
-                    raw = raw[raw.find("{"):raw.rfind("}") + 1]
+                    raw = raw[raw.find("{") : raw.rfind("}") + 1]
                 data = json.loads(raw)
                 return {
                     "approved": bool(data.get("approved", is_safe and has_docstring)),
@@ -181,6 +177,7 @@ class PonderingAgent(BaseAgent):
 
     def ponder(self, task: str) -> Dict[str, Any]:
         from agent_core.logos.pondering_engine import PonderingEngine
+
         engine = PonderingEngine()
         synthesis = engine.evaluate_multi_angle(task)
         return {
@@ -198,8 +195,8 @@ class LogosArchitectAgent(BaseAgent):
         super().__init__(role="LOGOS Chief Cognitive Architect", llm=llm)
 
     def plan_architecture(self, task: str) -> Dict[str, Any]:
-        from agent_core.logos.decomposition import MasterIndexDecomposer
         from agent_core.logos.convergence import DualFrameworkConvergenceEngine
+        from agent_core.logos.decomposition import MasterIndexDecomposer
         from agent_core.logos.nas_topology import NASTopologyEngine
 
         decomposer = MasterIndexDecomposer()

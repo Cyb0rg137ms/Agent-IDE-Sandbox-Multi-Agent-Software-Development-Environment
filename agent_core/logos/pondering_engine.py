@@ -13,12 +13,13 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Dict, List
 
 
 @dataclass
 class PonderingAngle:
     """An analytical angle of horizontal inquiry."""
+
     name: str
     dimension: str
     hypothesis: str
@@ -40,6 +41,7 @@ class PonderingAngle:
 @dataclass
 class PonderingSynthesis:
     """The synthesized output of multi-angle horizontal pondering."""
+
     total_angles_evaluated: int
     qualified_properties_count: int
     elimination_ratio_per_iteration: float
@@ -221,8 +223,10 @@ class PonderingEngine:
         (Directly implementing the mathematical framework from Lightyear v10 Prompts 4-5).
         """
         fraction_retained = 1.0 - (per_iter_reduction_pct / 100.0)
-        remaining_multiplier = fraction_retained ** iterations
-        bits_eliminated = -math.log2(remaining_multiplier) if remaining_multiplier > 0 else initial_space_bits
+        remaining_multiplier = fraction_retained**iterations
+        bits_eliminated = (
+            -math.log2(remaining_multiplier) if remaining_multiplier > 0 else initial_space_bits
+        )
         final_bits = max(0.0, initial_space_bits - bits_eliminated)
 
         return {

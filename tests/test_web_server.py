@@ -12,11 +12,10 @@ import threading
 import time
 import urllib.error
 import urllib.request
-import pytest
+from http.server import ThreadingHTTPServer
 
 from server.handlers import ChatSessionManager
-from server.web_server import AgentIDEServer, AgentIDERequestHandler
-from http.server import ThreadingHTTPServer
+from server.web_server import AgentIDERequestHandler
 
 
 class TestChatSessionManager:
@@ -37,12 +36,14 @@ class TestChatSessionManager:
 
     def test_update_settings_dynamic(self):
         manager = ChatSessionManager()
-        updated = manager.update_settings({
-            "provider": "mock",
-            "model": "custom-mock-test-v1",
-            "enable_logos": True,
-            "max_retries": 2,
-        })
+        updated = manager.update_settings(
+            {
+                "provider": "mock",
+                "model": "custom-mock-test-v1",
+                "enable_logos": True,
+                "max_retries": 2,
+            }
+        )
         assert updated["active_provider"] == "mock"
         assert updated["active_model"] == "custom-mock-test-v1"
         assert manager.max_retries == 2
@@ -50,7 +51,9 @@ class TestChatSessionManager:
     def test_process_chat_coding_task(self):
         manager = ChatSessionManager()
         manager.update_settings({"provider": "mock"})
-        res = manager.process_chat("Write a safe division function 'divide(a, b)' that handles zero divisor.")
+        res = manager.process_chat(
+            "Write a safe division function 'divide(a, b)' that handles zero divisor."
+        )
         assert res["type"] == "code_execution"
         assert res["status"] == "success"
         assert res["code"] is not None
@@ -86,7 +89,9 @@ class TestWebServerLiveEndpoints:
         cls.host = "127.0.0.1"
         cls.server_address = (cls.host, cls.port)
         cls.httpd = ThreadingHTTPServer(cls.server_address, AgentIDERequestHandler)
-        AgentIDERequestHandler.session_manager.update_settings({"provider": "mock", "model": "mock-developer-v1"})
+        AgentIDERequestHandler.session_manager.update_settings(
+            {"provider": "mock", "model": "mock-developer-v1"}
+        )
         cls.server_thread = threading.Thread(target=cls.httpd.serve_forever, daemon=True)
         cls.server_thread.start()
         time.sleep(0.3)  # Allow server to bind
@@ -131,7 +136,9 @@ class TestWebServerLiveEndpoints:
 
     def test_api_chat_post_endpoint(self):
         url = f"http://{self.host}:{self.port}/api/chat"
-        payload = json.dumps({"prompt": "Write a safe division function 'divide(a, b)'"}).encode("utf-8")
+        payload = json.dumps({"prompt": "Write a safe division function 'divide(a, b)'"}).encode(
+            "utf-8"
+        )
         req = urllib.request.Request(
             url,
             data=payload,
@@ -146,11 +153,13 @@ class TestWebServerLiveEndpoints:
 
     def test_api_settings_post_endpoint(self):
         url = f"http://{self.host}:{self.port}/api/settings"
-        payload = json.dumps({
-            "provider": "mock",
-            "model": "endpoint-test-model",
-            "enable_logos": True,
-        }).encode("utf-8")
+        payload = json.dumps(
+            {
+                "provider": "mock",
+                "model": "endpoint-test-model",
+                "enable_logos": True,
+            }
+        ).encode("utf-8")
         req = urllib.request.Request(
             url,
             data=payload,

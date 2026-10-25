@@ -10,14 +10,13 @@ Unit and integration tests for MCP Server Developer Studio:
 """
 
 import json
-import pytest
+
 from agent_core.mcp_studio import (
-    MCPToolDefinition,
-    MCPToolParameter,
-    MCPResourceDefinition,
+    MCPSandboxTester,
     MCPServerDefinition,
     MCPServerScaffolder,
-    MCPSandboxTester,
+    MCPToolDefinition,
+    MCPToolParameter,
     get_default_mcp_presets,
 )
 
@@ -31,7 +30,7 @@ class TestMCPServerStudio:
                 MCPToolParameter("a", "number", "First factor", required=True),
                 MCPToolParameter("b", "number", "Second factor", required=True),
             ],
-            handler_code="return json.dumps({'result': a * b})"
+            handler_code="return json.dumps({'result': a * b})",
         )
         schema = tool.to_mcp_tool_schema()
         assert schema["name"] == "multiply"
@@ -53,23 +52,25 @@ class TestMCPServerStudio:
                         MCPToolParameter("x", "integer", "First addend"),
                         MCPToolParameter("y", "integer", "Second addend"),
                     ],
-                    handler_code="return json.dumps({'sum': x + y})"
+                    handler_code="return json.dumps({'sum': x + y})",
                 )
-            ]
+            ],
         )
         code = MCPServerScaffolder.generate_python_server(sdef)
         assert "from mcp.server.fastmcp import FastMCP" in code
         assert 'FastMCP("math-engine")' in code
         assert "@mcp.tool()" in code
         assert "def add(x: int, y: int) -> str:" in code
-        assert "transport=\"stdio\"" in code
+        assert 'transport="stdio"' in code
 
     def test_mcp_claude_desktop_config(self):
         sdef = MCPServerDefinition(
             server_name="db-explorer",
             description="Database query server",
         )
-        cfg_str = MCPServerScaffolder.generate_claude_desktop_config(sdef, script_path="C:/mcp/server.py")
+        cfg_str = MCPServerScaffolder.generate_claude_desktop_config(
+            sdef, script_path="C:/mcp/server.py"
+        )
         cfg = json.loads(cfg_str)
         assert "mcpServers" in cfg
         assert "db-explorer" in cfg["mcpServers"]
@@ -82,7 +83,7 @@ class TestMCPServerStudio:
             name="hash_text",
             description="Computes SHA-256",
             parameters=[MCPToolParameter("payload", "string", "Text to hash")],
-            handler_code="import hashlib\nreturn hashlib.sha256(kwargs.get('payload', '').encode('utf-8')).hexdigest()"
+            handler_code="import hashlib\nreturn hashlib.sha256(kwargs.get('payload', '').encode('utf-8')).hexdigest()",
         )
         res = tester.test_tool_execution(tool, {"payload": "antigravity"})
         assert res["status"] == "success"

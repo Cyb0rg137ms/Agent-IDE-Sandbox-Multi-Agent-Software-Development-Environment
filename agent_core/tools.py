@@ -23,23 +23,21 @@ Security model:
 from __future__ import annotations
 
 import ast
-import json
-import os
 import subprocess
-import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-
 # ---------------------------------------------------------------------------
 # Tool result container
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class ToolResult:
     """Structured result from a tool call."""
+
     tool_name: str
     success: bool
     output: str
@@ -65,6 +63,7 @@ class ToolResult:
 # Base tool
 # ---------------------------------------------------------------------------
 
+
 class BaseTool:
     """Abstract base for all agent tools."""
 
@@ -87,6 +86,7 @@ class BaseTool:
 # ---------------------------------------------------------------------------
 # File tools
 # ---------------------------------------------------------------------------
+
 
 class FileReadTool(BaseTool):
     """Reads the content of a file at a given path."""
@@ -178,8 +178,9 @@ class FileWriteTool(BaseTool):
             p = Path(path)
             p.parent.mkdir(parents=True, exist_ok=True)
             write_mode = "w" if mode == "write" else "a"
-            p.write_text(content, encoding="utf-8") if write_mode == "w" else \
-                open(p, "a", encoding="utf-8").write(content)
+            p.write_text(content, encoding="utf-8") if write_mode == "w" else open(
+                p, "a", encoding="utf-8"
+            ).write(content)
             return ToolResult(
                 tool_name=self.name,
                 success=True,
@@ -199,6 +200,7 @@ class FileWriteTool(BaseTool):
 # ---------------------------------------------------------------------------
 # Code execution tools
 # ---------------------------------------------------------------------------
+
 
 class ShellExecuteTool(BaseTool):
     """
@@ -302,10 +304,19 @@ class PythonEvalTool(BaseTool):
         "required": ["expression"],
     }
 
-    BLOCKED_BUILTINS = frozenset([
-        "__import__", "exec", "eval", "open", "compile",
-        "getattr", "setattr", "delattr", "__builtins__",
-    ])
+    BLOCKED_BUILTINS = frozenset(
+        [
+            "__import__",
+            "exec",
+            "eval",
+            "open",
+            "compile",
+            "getattr",
+            "setattr",
+            "delattr",
+            "__builtins__",
+        ]
+    )
 
     def execute(self, expression: str) -> ToolResult:
         t0 = time.perf_counter()
@@ -322,11 +333,26 @@ class PythonEvalTool(BaseTool):
             # Safe builtins
             safe_globals = {
                 "__builtins__": {},
-                "abs": abs, "round": round, "len": len, "min": min, "max": max,
-                "sum": sum, "range": range, "list": list, "dict": dict,
-                "set": set, "tuple": tuple, "str": str, "int": int, "float": float,
-                "bool": bool, "sorted": sorted, "enumerate": enumerate, "zip": zip,
-                "map": map, "filter": filter,
+                "abs": abs,
+                "round": round,
+                "len": len,
+                "min": min,
+                "max": max,
+                "sum": sum,
+                "range": range,
+                "list": list,
+                "dict": dict,
+                "set": set,
+                "tuple": tuple,
+                "str": str,
+                "int": int,
+                "float": float,
+                "bool": bool,
+                "sorted": sorted,
+                "enumerate": enumerate,
+                "zip": zip,
+                "map": map,
+                "filter": filter,
                 "math": __import__("math"),
             }
 
@@ -350,6 +376,7 @@ class PythonEvalTool(BaseTool):
 # ---------------------------------------------------------------------------
 # LOGOS Cognitive & Retrieval Tools
 # ---------------------------------------------------------------------------
+
 
 class WebSearchTool(BaseTool):
     """Searches external web or algorithmic corpus for theorems, invariants, and specs."""
@@ -375,6 +402,7 @@ class WebSearchTool(BaseTool):
         t0 = time.perf_counter()
         try:
             from agent_core.logos.dynamic_retrieval import DynamicAxiomRetriever
+
             retriever = DynamicAxiomRetriever()
             results = retriever.search_duckduckgo(query, max_results=max_results)
             output_parts = [f"Found {len(results)} references:"]
@@ -418,9 +446,14 @@ class AxiomVerificationTool(BaseTool):
         t0 = time.perf_counter()
         try:
             from agent_core.logos.axiomatic_engine import AxiomaticEngine
+
             engine = AxiomaticEngine()
             consistent, violations = engine.verify_consistency(propositions)
-            out = "Axiomatic Check: PASS (All invariants hold)" if consistent else f"Axiomatic Check: VIOLATIONS DETECTED:\n" + "\n".join(violations)
+            out = (
+                "Axiomatic Check: PASS (All invariants hold)"
+                if consistent
+                else "Axiomatic Check: VIOLATIONS DETECTED:\n" + "\n".join(violations)
+            )
             return ToolResult(
                 tool_name=self.name,
                 success=consistent,
@@ -459,9 +492,13 @@ class PonderingQueryTool(BaseTool):
         t0 = time.perf_counter()
         try:
             from agent_core.logos.pondering_engine import PonderingEngine
+
             engine = PonderingEngine()
             synthesis = engine.evaluate_multi_angle(task_description)
-            lines = [synthesis.synthesis_summary, "\nQualified Properties (Confidence >= 95%):"]
+            lines = [
+                synthesis.synthesis_summary,
+                "\nQualified Properties (Confidence >= 95%):",
+            ]
             for p in synthesis.qualified_properties:
                 lines.append(f"  * [{p.name}] (C={p.confidence:.2%}): {p.hypothesis}")
             return ToolResult(
@@ -487,6 +524,7 @@ class PonderingQueryTool(BaseTool):
 # ---------------------------------------------------------------------------
 # Tool registry
 # ---------------------------------------------------------------------------
+
 
 class ToolRegistry:
     """Registry of available tools, with lookup by name and schema export."""
